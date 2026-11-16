@@ -16,12 +16,25 @@ public sealed class VoskSpeechService : IDisposable
     private WaveInEvent? _waveIn;
     private bool _disposed;
     private int _voiceHangoverFrames;
+    private double _voiceActivationThresholdDb = -42.0;
+    private double _minimumRecognitionConfidence = 0.55;
 
-    // Soglia iniziale prudente; da calibrare quando sarà disponibile il microfono reale.
-    private const double VoiceActivationThresholdDb = -42.0;
+    // Valori regolabili e persistiti dal ViewModel.
     private const int VoiceHangoverFrameCount = 5; // 5 x 50 ms = 250 ms
 
-    public event Action<string, bool>? RecognitionReceived;
+    public event Action<string, bool, double>? RecognitionReceived;
+
+    public double VoiceActivationThresholdDb
+    {
+        get { lock (_sync) return _voiceActivationThresholdDb; }
+        set { lock (_sync) _voiceActivationThresholdDb = Math.Clamp(value, -60.0, -20.0); }
+    }
+
+    public double MinimumRecognitionConfidence
+    {
+        get { lock (_sync) return _minimumRecognitionConfidence; }
+        set { lock (_sync) _minimumRecognitionConfidence = Math.Clamp(value, 0.0, 1.0); }
+    }
     public event Action<string>? StatusChanged;
     public event Action<double, double>? AudioLevelChanged;
 
@@ -39,6 +52,7 @@ public sealed class VoskSpeechService : IDisposable
         _model = new Model(modelPath);
         _recognizer = new VoskRecognizer(_model, 16000.0f, CommandCatalog.BuildGrammar(commands ?? CommandCatalog.CreateDefaults()));
         _recognizer.SetMaxAlternatives(0);
+        _recognizer.SetWords(true);
 
         try
         {
@@ -97,7 +111,7 @@ public sealed class VoskSpeechService : IDisposable
 
             // Apre il gate sopra soglia e lo mantiene per 250 ms per non troncare
             // le code delle parole. Nei periodi di rumore debole invia silenzio a Vosk.
-            var voiceDetected = levels.RmsDb >= VoiceActivationThresholdDb;
+            var voiceDetected = levels.RmsDb >= _voiceActivationThresholdDb;
             bool keepAudioFrame;
             if (voiceDetected)
             {
@@ -120,13 +134,13 @@ public sealed class VoskSpeechService : IDisposable
             {
                 var text = ReadText(_recognizer.Result());
                 if (!string.IsNullOrWhiteSpace(text) && text != "[unk]")
-                    RecognitionReceived?.Invoke(text, true);
+                    RecognitionReceived?.Invoke(text, true, ReadConfidence(_recognizer.Result()));
             }
             else
             {
                 var text = ReadText(_recognizer.PartialResult());
                 if (!string.IsNullOrWhiteSpace(text))
-                    RecognitionReceived?.Invoke(text, false);
+                    RecognitionReceived?.Invoke(text, false, 1.0);
             }
         }
     }
@@ -152,6 +166,23 @@ public sealed class VoskSpeechService : IDisposable
         return (rmsDb, peakDb);
     }
 
+    private static double ReadConfidence(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("result", out var words) || words.ValueKind != JsonValueKind.Array)
+                return 0.0;
+
+            var confidences = words.EnumerateArray()
+                .Where(word => word.TryGetProperty("conf", out var confidence) && confidence.TryGetDouble(out _))
+                .Select(word => { word.TryGetProperty("conf", out var confidence); return confidence.GetDouble(); })
+                .ToArray();
+            return confidences.Length == 0 ? 0.0 : confidences.Average();
+        }
+        catch (JsonException) { return 0.0; }
+    }
+
     private static string ReadText(string json)
     {
         try
@@ -168,8 +199,11 @@ public sealed class VoskSpeechService : IDisposable
 
     private void OnRecordingStopped(object? sender, StoppedEventArgs e)
     {
+        IsListening = false;
         if (e.Exception is not null)
-            StatusChanged?.Invoke($"Errore audio: {e.Exception.Message}");
+            StatusChanged?.Invoke($"Errore audio: {e.Exception.Message}. Ascolto interrotto.");
+        else
+            StatusChanged?.Invoke("Acquisizione audio terminata.");
     }
 
     private void CleanupAudio()
