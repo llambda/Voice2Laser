@@ -47,6 +47,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -100,7 +101,46 @@
             </Grid>
         </Border>
 
+        
         <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="CONNESSIONE EZCAD2" FontSize="11" FontWeight="Bold" Foreground="#35699E"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                        <materialDesign:PackIcon Kind="Circle" Width="14" Height="14" Margin="0,0,8,0"
+                                                 VerticalAlignment="Center">
+                            <materialDesign:PackIcon.Style>
+                                <Style TargetType="{x:Type materialDesign:PackIcon}">
+                                    <Setter Property="Foreground" Value="#DC2626"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding EzCadConnected}" Value="True">
+                                            <Setter Property="Foreground" Value="#16A34A"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </materialDesign:PackIcon.Style>
+                        </materialDesign:PackIcon>
+                        <TextBlock Text="{Binding EzCadStatus}" Foreground="#334155"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock Text="Il controllo verifica il processo EZCAD2 e l'accessibilità della sua finestra principale. Non invia comandi né modifica la finestra attiva."
+                               Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Button Grid.Column="1" Click="CheckEzCad_Click" Padding="12,7" Margin="12,0,0,0"
+                        VerticalAlignment="Center" Background="#E2E8F0" Foreground="#1E293B">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Refresh" Width="17" Height="17" Margin="0,0,7,0"/>
+                        <TextBlock Text="Verifica"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12">
             <StackPanel>
                 <TextBlock Text="MICROFONO" FontSize="11" FontWeight="Bold" Foreground="#35699E" Margin="0,0,0,8"/>
                 <Grid>
@@ -136,14 +176,14 @@
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="3" Background="#E8F1FC" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+        <Border Grid.Row="4" Background="#E8F1FC" CornerRadius="8" Padding="16" Margin="0,0,0,12">
             <StackPanel>
                 <TextBlock Text="RICONOSCIMENTO IN TEMPO REALE" FontSize="11" FontWeight="Bold" Foreground="#35699E"/>
                 <TextBlock Text="{Binding PartialText}" FontSize="22" Foreground="#173B63" Margin="0,7,0,0"/>
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="4" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12" IsEnabled="{Binding CanSelectAudioDevice}">
+        <Border Grid.Row="5" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12" IsEnabled="{Binding CanSelectAudioDevice}">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                     <TextBlock Text="CONFIGURAZIONE COMANDI VOCALI" FontSize="15" FontWeight="SemiBold" Foreground="#172B4D"/>
@@ -178,7 +218,7 @@
             </DockPanel>
         </Border>
 
-        <Border Grid.Row="5" Background="White" CornerRadius="8" Padding="14">
+        <Border Grid.Row="6" Background="White" CornerRadius="8" Padding="14">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="Registro comandi riconosciuti" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
                 <DataGrid ItemsSource="{Binding Events}" AutoGenerateColumns="False" IsReadOnly="True"
@@ -191,7 +231,7 @@
                 </DataGrid>
             </DockPanel>
         </Border>
-        <TextBlock Grid.Row="6" Text="COMANDI ATTIVI: F1 anteprima · F2 start/go · ESC stop. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
+        <TextBlock Grid.Row="7" Text="COMANDI ATTIVI: F1 anteprima · F2 start/go · ESC stop. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
                    Foreground="#9A3412" FontWeight="SemiBold" TextWrapping="Wrap" Margin="2,12,2,0"/>
     </Grid>
 </Window>
