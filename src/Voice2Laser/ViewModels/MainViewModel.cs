@@ -39,6 +39,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _disposed;
     private bool _ezCadConnected;
     private string _ezCadStatus = "Verifica non ancora eseguita.";
+    private readonly Dictionary<string, DateTime> _lastRecognizedActionTimes = new(StringComparer.Ordinal);
+    private static readonly TimeSpan DuplicateCommandWindow = TimeSpan.FromMilliseconds(1200);
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
@@ -336,11 +338,19 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                     ? "Non associato"
                     : CommandCatalog.GetActionName(matchedCommand.ActionId);
 
-                if (matchedCommand is not null &&
-                    _keyboardCommands.TryExecute(matchedCommand.ActionId, out var executionStatus))
+                if (matchedCommand is not null)
                 {
-                    Status = executionStatus;
-                    actionName = $"{actionName} — {executionStatus}";
+                    var now = DateTime.UtcNow;
+                    if (_lastRecognizedActionTimes.TryGetValue(matchedCommand.ActionId, out var lastTime) &&
+                        now - lastTime < DuplicateCommandWindow)
+                    {
+                        actionName = $"{actionName} — ripetizione ravvicinata ignorata";
+                    }
+                    else
+                    {
+                        _lastRecognizedActionTimes[matchedCommand.ActionId] = now;
+                        Status = $"Comando riconosciuto: {actionName}. Invio a EZCAD2 non ancora attivato.";
+                    }
                 }
 
                 Events.Insert(0, new RecognitionEvent(DateTime.Now, text, actionName));
