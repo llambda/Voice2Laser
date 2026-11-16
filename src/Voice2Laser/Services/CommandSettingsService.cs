@@ -26,9 +26,11 @@ public sealed class CommandSettingsService
 
             return saved.Select(command => new VoiceCommand(
                 command.Phrase ?? string.Empty,
-                CommandCatalog.AvailableActions.Any(action => action.Id == command.ActionId)
-                    ? command.ActionId
-                    : "stop")).ToList();
+                command.ActionId == "stop"
+                    ? "stop_laser"
+                    : CommandCatalog.AvailableActions.Any(action => action.Id == command.ActionId)
+                        ? command.ActionId
+                        : "stop_laser")).ToList();
         }
         catch
         {
