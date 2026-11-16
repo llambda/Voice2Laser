@@ -27,9 +27,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly string _voiceSettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Voice2Laser", "voice-settings.json");
-    private readonly string _logPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Voice2Laser", "logs", "voice2laser.log");
     private DispatcherTimer? _calibrationTimer;
     private readonly List<double> _calibrationSamples = [];
 
@@ -198,7 +195,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _speech.MinimumRecognitionConfidence = _minimumConfidence;
         _speech.RecognitionReceived += OnRecognition;
         _speech.AudioLevelChanged += OnAudioLevel;
-        _speech.StatusChanged += OnSpeechStatusChanged;
+        _speech.StatusChanged += message => Application.Current.Dispatcher.BeginInvoke(() => Status = message);
 
         CheckModelAvailability();
         CheckEzCadConnection();
@@ -272,8 +269,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
             if (microphoneWasDisconnected)
             {
-                IsLiveInputEnabled = false;
-                LogDiagnostic("Microfono scollegato: ascolto fermato e invio reale disabilitato.");
                 Application.Current.Dispatcher.BeginInvoke(() =>
                     Status = "Microfono scollegato. Ascolto fermato; ricollega le cuffie e aggiorna la selezione.");
             }
@@ -282,7 +277,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             _isRefreshingDevices = false;
             if (!automatic) Status = $"Errore durante la ricerca dei microfoni: {ex.Message}";
-            LogDiagnostic($"Errore refresh microfoni: {ex}");
+
         }
     }
 
@@ -328,9 +323,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _minimumConfidence = Math.Clamp(settings.MinimumConfidence, 0.30, 0.95);
             _duplicateCommandWindowMs = Math.Clamp(settings.DuplicateCommandWindowMs, 500, 3000);
         }
-        catch (Exception ex)
+        catch
         {
-            LogDiagnostic($"Impossibile leggere le impostazioni vocali: {ex.Message}");
+            // Se il file è danneggiato, vengono mantenuti i valori predefiniti.
         }
     }
 
@@ -345,22 +340,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         catch (Exception ex)
         {
-            LogDiagnostic($"Impossibile salvare le impostazioni vocali: {ex.Message}");
             Status = $"Impossibile salvare le impostazioni: {ex.Message}";
         }
-    }
-
-    private void LogDiagnostic(string message)
-    {
-        try
-        {
-            var directory = Path.GetDirectoryName(_logPath);
-            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            if (File.Exists(_logPath) && new FileInfo(_logPath).Length > 1_000_000)
-                File.WriteAllText(_logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Log azzerato (limite 1 MB).{Environment.NewLine}");
-            File.AppendAllText(_logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}");
-        }
-        catch { /* La diagnostica non deve interrompere il controllo vocale. */ }
     }
 
     public void StartCalibration()
@@ -374,7 +355,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _calibrationTimer?.Stop();
         _calibrationSamples.Clear();
         Status = "Calibrazione: resta in silenzio per 5 secondi.";
-        LogDiagnostic("Avviata calibrazione del rumore ambientale.");
         _calibrationTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _calibrationTimer.Tick += (_, _) =>
         {
@@ -382,7 +362,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             if (_calibrationSamples.Count < 10)
             {
                 Status = "Calibrazione non riuscita: pochi campioni audio.";
-                LogDiagnostic("Calibrazione annullata: campioni insufficienti.");
                 return;
             }
 
@@ -390,7 +369,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             var medianNoise = ordered[ordered.Length / 2];
             VoiceThresholdDb = Math.Clamp(medianNoise + 10.0, -55.0, -25.0);
             Status = $"Calibrazione completata. Rumore mediano {medianNoise:0} dBFS; soglia impostata a {VoiceThresholdDb:0} dBFS.";
-            LogDiagnostic(Status);
         };
         _calibrationTimer.Start();
     }
@@ -433,7 +411,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         EzCadConnected = _keyboardCommands.CheckConnection(out var message);
         EzCadStatus = message;
-        LogDiagnostic($"Controllo EZCAD2: {message}");
     }
 
     public void Start()
@@ -449,14 +426,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             _speech.Start(ModelPath, SelectedAudioDevice.DeviceNumber, Commands.ToList());
             IsListening = true;
-            LogDiagnostic($"Ascolto avviato. Microfono: {SelectedAudioDevice.Name}; soglia: {VoiceThresholdDb:0} dBFS; confidenza minima: {MinimumConfidence:P0}.");
         }
         catch (Exception ex)
         {
             IsListening = false;
             IsLiveInputEnabled = false;
             Status = $"Impossibile avviare: {ex.Message}";
-            LogDiagnostic($"Errore avvio ascolto: {ex}");
             MessageBox.Show(ex.Message, "Voice2Laser", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -482,27 +457,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         });
     }
 
-    private void OnSpeechStatusChanged(string message)
-    {
-        Application.Current.Dispatcher.BeginInvoke(() =>
-        {
-            Status = message;
-            if (message.StartsWith("Errore audio", StringComparison.OrdinalIgnoreCase) ||
-                message.StartsWith("Acquisizione audio terminata", StringComparison.OrdinalIgnoreCase))
-            {
-                IsListening = false;
-                IsLiveInputEnabled = false;
-                AudioLevelDb = -60.0;
-                AudioPeakDb = -60.0;
-                LogDiagnostic($"Acquisizione interrotta: {message} Invio reale disabilitato.");
-            }
-            else
-            {
-                LogDiagnostic($"Stato audio: {message}");
-            }
-        });
-    }
-
     private void OnRecognition(string text, bool isFinal, double confidence)
     {
         Application.Current.Dispatcher.BeginInvoke(() =>
@@ -510,7 +464,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             if (isFinal)
             {
                 PartialText = $"Riconosciuto: {text} ({confidence:P0})";
-                LogDiagnostic($"Riconoscimento finale: '{text}', confidenza {confidence:P0}.");
                 var matchedCommand = Commands.FirstOrDefault(command =>
                     string.Equals(command.Phrase.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase));
                 var actionName = matchedCommand is null
@@ -523,7 +476,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                     {
                         actionName = $"{actionName} — confidenza insufficiente ({confidence:P0}), ignorato";
                         Status = $"Comando ignorato: confidenza {confidence:P0}, minimo richiesto {MinimumConfidence:P0}.";
-                        LogDiagnostic(Status);
                     }
                     else
                     {
@@ -532,7 +484,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                         now - lastTime < TimeSpan.FromMilliseconds(DuplicateCommandWindowMs))
                     {
                         actionName = $"{actionName} — ripetizione ravvicinata ignorata";
-                        LogDiagnostic($"Ripetizione ignorata: {matchedCommand.ActionId}.");
                     }
                     else
                     {
@@ -543,7 +494,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                             _keyboardCommands.TryExecute(matchedCommand.ActionId, out var sendMessage);
                             Status = sendMessage;
                             actionName = $"{actionName} — {sendMessage}";
-                            LogDiagnostic($"Invio live {matchedCommand.ActionId}: {sendMessage}");
                         }
                         else
                         {
@@ -553,7 +503,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                             var testMessage = $"TEST: sarebbe inviato {keyDescription} — {targetStatus}. Nessun tasto inviato.";
                             Status = testMessage;
                             actionName = $"{actionName} — {testMessage}";
-                            LogDiagnostic($"Modalità test {matchedCommand.ActionId}: {testMessage}");
                         }
                     }
                     }
