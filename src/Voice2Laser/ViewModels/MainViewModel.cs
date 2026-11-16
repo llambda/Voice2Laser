@@ -159,13 +159,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             var selectedStillPresent = selectedName is not null &&
                 detected.Any(d => string.Equals(d.Name, selectedName, StringComparison.OrdinalIgnoreCase));
 
-            if (IsListening && !selectedStillPresent)
+            var microphoneWasDisconnected = IsListening && !selectedStillPresent;
+            if (microphoneWasDisconnected)
             {
                 _speech.Stop();
                 IsListening = false;
                 AudioLevelDb = -60.0;
                 AudioPeakDb = -60.0;
-                Status = "Microfono scollegato. Ascolto fermato; ricollega le cuffie e aggiorna la selezione.";
             }
 
             _isRefreshingDevices = true;
@@ -191,6 +191,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                     ? $"Microfono selezionato: {restored.Name}"
                     : $"Microfoni rilevati: {AudioInputDevices.Count}. Seleziona quello da utilizzare.";
             }
+
+            if (microphoneWasDisconnected)
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                    Status = "Microfono scollegato. Ascolto fermato; ricollega le cuffie e aggiorna la selezione.");
         }
         catch (Exception ex)
         {
