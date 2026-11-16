@@ -120,7 +120,7 @@
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="LIVELLO AUDIO IN INGRESSO" FontSize="10" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding AudioLevelPercent}" Height="12"
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding AudioLevelPercent, Mode=OneWay}" Height="12"
                                      Background="#E2E8F0" Foreground="#16A34A" BorderThickness="0"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding AudioLevelText}" MinWidth="150"
