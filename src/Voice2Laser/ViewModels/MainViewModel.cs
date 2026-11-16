@@ -13,13 +13,27 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private string _status = "Pronto";
     private string _modelPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "models", "vosk-model-small-it-0.22"));
     private string _partialText = "In attesa di riconoscimento";
+    private string _modelStatusText = "Percorso del modello non ancora verificato.";
+    private bool? _modelExists;
     private bool _isListening;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
 
     public string Status { get => _status; private set => Set(ref _status, value); }
-    public string ModelPath { get => _modelPath; set => Set(ref _modelPath, value); }
+    public string ModelPath
+    {
+        get => _modelPath;
+        set
+        {
+            if (string.Equals(_modelPath, value, StringComparison.Ordinal)) return;
+            _modelPath = value;
+            OnPropertyChanged();
+            CheckModelAvailability();
+        }
+    }
     public string PartialText { get => _partialText; private set => Set(ref _partialText, value); }
+    public string ModelStatusText { get => _modelStatusText; private set => Set(ref _modelStatusText, value); }
+    public bool? ModelExists { get => _modelExists; private set => Set(ref _modelExists, value); }
     public bool IsListening { get => _isListening; private set => Set(ref _isListening, value); }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -28,16 +42,17 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         _speech.RecognitionReceived += OnRecognition;
         _speech.StatusChanged += message => Application.Current.Dispatcher.Invoke(() => Status = message);
+        CheckModelAvailability();
     }
 
-    public void VerifyModel()
+    private void CheckModelAvailability()
     {
         var path = ModelPath?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
         {
-            Status = "Modello non trovato: controlla il percorso indicato.";
-            MessageBox.Show($"La cartella del modello Vosk non esiste:\n\n{path}", "Verifica modello",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ModelExists = false;
+            ModelStatusText = "Modello Vosk non trovato nel percorso indicato.";
+            Status = ModelStatusText;
             return;
         }
 
@@ -55,16 +70,15 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         if (missingFiles.Length > 0)
         {
-            var missingList = string.Join(Environment.NewLine, missingFiles.Select(file => "• " + file));
-            Status = "Cartella trovata, ma il modello risulta incompleto.";
-            MessageBox.Show($"La cartella esiste, ma mancano alcuni file essenziali:\n\n{missingList}\n\nEstrai nuovamente il modello Vosk completo.",
-                "Modello incompleto", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ModelExists = false;
+            ModelStatusText = $"Modello incompleto: mancano {missingFiles.Length} file essenziali.";
+            Status = ModelStatusText;
             return;
         }
 
-        Status = "Modello Vosk presente: struttura dei file verificata.";
-        MessageBox.Show($"Modello Vosk trovato e struttura essenziale verificata.\n\nPercorso:\n{path}",
-            "Verifica completata", MessageBoxButton.OK, MessageBoxImage.Information);
+        ModelExists = true;
+        ModelStatusText = "Modello Vosk presente e struttura essenziale verificata.";
+        Status = ModelStatusText;
     }
 
     public void Start()
@@ -109,8 +123,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        OnPropertyChanged(name);
     }
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
     public void Dispose() => _speech.Dispose();
 }
