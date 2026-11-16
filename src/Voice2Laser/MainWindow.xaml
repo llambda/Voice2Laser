@@ -47,13 +47,12 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,18">
             <TextBlock Text="Voice2Laser" FontSize="28" FontWeight="SemiBold" Foreground="#172B4D"/>
-            <TextBlock Text="Controllo vocale offline per EZCAD2 – comandi vocali e tastiera"
+            <TextBlock Text="Controllo vocale offline per EZCAD2"
                        Foreground="#64748B" FontSize="13" Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -183,42 +182,7 @@
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="5" Background="White" CornerRadius="8" Padding="14" Margin="0,0,0,12" IsEnabled="{Binding CanSelectAudioDevice}">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                    <TextBlock Text="CONFIGURAZIONE COMANDI VOCALI" FontSize="15" FontWeight="SemiBold" Foreground="#172B4D"/>
-                    <TextBlock Text="Aggiungi più frasi per la stessa azione. Anteprima invia F1, Start/Go invia F2 e Stop invia ESC direttamente a EZCAD2."
-                               Foreground="#64748B" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
-                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <Button Click="AddCommand_Click" Content="Aggiungi frase" Padding="12,6" Margin="0,0,8,0"
-                            Background="#E2E8F0" Foreground="#1E293B"/>
-                    <Button Click="RemoveCommand_Click" Content="Rimuovi selezionata" Padding="12,6" Margin="0,0,8,0"
-                            Background="#FEE2E2" Foreground="#991B1B"/>
-                    <Button Click="SaveCommands_Click" Content="Salva comandi" Padding="12,6"
-                            Background="#2563EB" Foreground="White"/>
-                </StackPanel>
-                <DataGrid ItemsSource="{Binding Commands}" SelectedItem="{Binding SelectedCommand}"
-                          AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal" MinHeight="100" MaxHeight="130">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Frase da pronunciare" Binding="{Binding Phrase, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
-                        <DataGridTemplateColumn Header="Azione associata" Width="*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.AvailableActions, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                              DisplayMemberPath="Name" SelectedValuePath="Id"
-                                              SelectedValue="{Binding ActionId, UpdateSourceTrigger=PropertyChanged}"
-                                              BorderThickness="0" Padding="4"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </DockPanel>
-        </Border>
-
-        <Border Grid.Row="6" Background="White" CornerRadius="8" Padding="14">
+        <Border Grid.Row="5" Background="White" CornerRadius="8" Padding="14">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="Registro comandi riconosciuti" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
                 <DataGrid ItemsSource="{Binding Events}" AutoGenerateColumns="False" IsReadOnly="True"
@@ -231,7 +195,7 @@
                 </DataGrid>
             </DockPanel>
         </Border>
-        <TextBlock Grid.Row="7" Text="COMANDI ATTIVI: F1 anteprima · F2 start/go · ESC stop. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
+        <TextBlock Grid.Row="6" Text="COMANDI: anteprima · start/go · stop · su · giù · destra · sinistra. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
                    Foreground="#9A3412" FontWeight="SemiBold" TextWrapping="Wrap" Margin="2,12,2,0"/>
     </Grid>
 </Window>
