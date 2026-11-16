@@ -55,7 +55,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get => _isLiveInputEnabled;
         set
         {
-            if (!Set(ref _isLiveInputEnabled, value)) return;
+            if (_isLiveInputEnabled == value) return;
+            _isLiveInputEnabled = value;
+            OnPropertyChanged();
             Status = value
                 ? "INVIO REALE ATTIVO: i comandi riconosciuti possono agire su EZCAD2."
                 : "Modalità test attiva: nessun tasto viene inviato.";
