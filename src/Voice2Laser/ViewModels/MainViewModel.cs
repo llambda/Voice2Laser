@@ -2,10 +2,13 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using NAudio.Wave;
 using Voice2Laser.Models;
 using Voice2Laser.Services;
 
 namespace Voice2Laser.ViewModels;
+
+public sealed record AudioInputDevice(int DeviceNumber, string Name);
 
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
@@ -16,8 +19,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private string _modelStatusText = "Percorso del modello non ancora verificato.";
     private bool? _modelExists;
     private bool _isListening;
+    private AudioInputDevice? _selectedAudioDevice;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
+    public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
 
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string ModelPath
@@ -34,7 +39,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public string PartialText { get => _partialText; private set => Set(ref _partialText, value); }
     public string ModelStatusText { get => _modelStatusText; private set => Set(ref _modelStatusText, value); }
     public bool? ModelExists { get => _modelExists; private set => Set(ref _modelExists, value); }
-    public bool IsListening { get => _isListening; private set => Set(ref _isListening, value); }
+    public bool IsListening
+    {
+        get => _isListening;
+        private set
+        {
+            if (Set(ref _isListening, value))
+                OnPropertyChanged(nameof(CanSelectAudioDevice));
+        }
+    }
+    public bool CanSelectAudioDevice => !IsListening;
+    public AudioInputDevice? SelectedAudioDevice
+    {
+        get => _selectedAudioDevice;
+        set => Set(ref _selectedAudioDevice, value);
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -43,6 +62,34 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _speech.RecognitionReceived += OnRecognition;
         _speech.StatusChanged += message => Application.Current.Dispatcher.Invoke(() => Status = message);
         CheckModelAvailability();
+        RefreshAudioDevices();
+    }
+
+    public void RefreshAudioDevices()
+    {
+        var previousDeviceNumber = SelectedAudioDevice?.DeviceNumber;
+        AudioInputDevices.Clear();
+
+        try
+        {
+            for (var i = 0; i < WaveIn.DeviceCount; i++)
+            {
+                var capabilities = WaveIn.GetCapabilities(i);
+                AudioInputDevices.Add(new AudioInputDevice(i, capabilities.ProductName));
+            }
+
+            SelectedAudioDevice = AudioInputDevices.FirstOrDefault(d => d.DeviceNumber == previousDeviceNumber)
+                                  ?? AudioInputDevices.FirstOrDefault();
+
+            if (AudioInputDevices.Count == 0)
+                Status = "Nessun microfono rilevato. Collega un dispositivo e aggiorna l'elenco.";
+            else
+                Status = $"Microfoni rilevati: {AudioInputDevices.Count}. Seleziona quello da utilizzare.";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Errore durante la ricerca dei microfoni: {ex.Message}";
+        }
     }
 
     private void CheckModelAvailability()
@@ -83,9 +130,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void Start()
     {
+        if (SelectedAudioDevice is null)
+        {
+            Status = "Seleziona un microfono prima di avviare l'ascolto.";
+            MessageBox.Show(Status, "Microfono non selezionato", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
-            _speech.Start(ModelPath);
+            _speech.Start(ModelPath, SelectedAudioDevice.DeviceNumber);
             IsListening = true;
         }
         catch (Exception ex)
@@ -124,6 +178,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
         OnPropertyChanged(name);
+    }
+
+    private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null, bool notify = true)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        if (notify) OnPropertyChanged(name);
+        return true;
     }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
