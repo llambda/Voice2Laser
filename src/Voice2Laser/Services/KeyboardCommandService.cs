@@ -14,7 +14,6 @@ public sealed class KeyboardCommandService
 {
     private const uint InputKeyboard = 1;
     private const uint KeyUp = 0x0002;
-    private const int SwRestore = 9;
     private const ushort VkEscape = 0x1B;
     private const ushort VkF1 = 0x70;
     private const ushort VkF2 = 0x71;
@@ -75,6 +74,39 @@ public sealed class KeyboardCommandService
             message = $"Verifica EZCAD2 non riuscita: {ex.Message}";
             return false;
         }
+    }
+
+    public bool IsEzCadForeground(out string message)
+    {
+        try
+        {
+            foreach (var process in Process.GetProcessesByName(TargetProcessName))
+            {
+                using (process)
+                {
+                    try
+                    {
+                        var handle = process.MainWindowHandle;
+                        if (handle == IntPtr.Zero || !IsWindow(handle)) continue;
+                        GetWindowThreadProcessId(handle, out var pid);
+                        if (pid == (uint)process.Id && IsTargetForegroundWindow(handle, pid))
+                        {
+                            message = "EZCAD2 è la finestra attiva.";
+                            return true;
+                        }
+                    }
+                    catch { /* Il processo può chiudersi durante il controllo. */ }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Verifica focus EZCAD2 non riuscita: {ex.Message}";
+            return false;
+        }
+
+        message = "EZCAD2 non è in primo piano. Nessun comando verrà inviato.";
+        return false;
     }
 
     public static string GetKeyDescription(string actionId) => actionId switch
@@ -147,21 +179,19 @@ public sealed class KeyboardCommandService
                 return true;
             }
 
-            ShowWindowAsync(windowHandle, SwRestore);
-            SetForegroundWindow(windowHandle);
-
-            // Verifica sia l'handle sia il PID: non basta che una finestra qualsiasi sia attiva.
-            if (!IsTargetForegroundWindow(windowHandle, targetProcessId))
+            // Non portare EZCAD2 in primo piano automaticamente: l'operatore deve
+            // selezionarlo esplicitamente. Se il focus è altrove, non inviare input.
+            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
             {
-                message = "EZCAD2 non è diventato la finestra attiva: tasto non inviato.";
+                message = "EZCAD2 non è la finestra attiva: tasto bloccato. Seleziona EZCAD2 e riprova.";
                 return true;
             }
 
-            // Ultimo controllo immediatamente prima dell'invio, per ridurre il rischio
-            // di inviare input a un'altra applicazione se il focus cambia.
+            // Verifica immediata prima dell'invio; SendInput resta comunque globale
+            // e Windows può cambiare il focus in una brevissima finestra temporale.
             if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
             {
-                message = "Il focus di EZCAD2 è cambiato: tasto non inviato.";
+                message = "Il focus di EZCAD2 è cambiato: tasto bloccato.";
                 return true;
             }
 
@@ -225,12 +255,6 @@ public sealed class KeyboardCommandService
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
