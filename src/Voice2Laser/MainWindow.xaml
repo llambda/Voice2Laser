@@ -43,7 +43,10 @@
                                 </Style>
                             </materialDesign:PackIcon.Style>
                         </materialDesign:PackIcon>
-                        <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+                        <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 MinHeight="34" Height="36" Padding="8,4" FontSize="12"
+                                 VerticalContentAlignment="Center"/>
                     </DockPanel>
                     <TextBlock Text="{Binding Status}" Foreground="#475569" Margin="0,8,0,0"/>
                 </StackPanel>
@@ -93,11 +96,16 @@
                     <TextBlock Text="Il controllo verifica il processo EZCAD2 e l'accessibilità della sua finestra principale. Non invia comandi né modifica la finestra attiva."
                                Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
-                <Button Grid.Column="1" Click="CheckEzCad_Click" Padding="12,7" Margin="12,0,0,0"
-                        VerticalAlignment="Center" Style="{StaticResource MaterialDesignOutlinedButton}">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Refresh" Width="17" Height="17" Margin="0,0,7,0"/>
-                        <TextBlock Text="Verifica"/>
+                <Button Grid.Column="1" Click="CheckEzCad_Click"
+                        Width="112" MinWidth="112" Height="40" Padding="8,0"
+                        Margin="12,0,0,0" VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        Style="{StaticResource MaterialDesignOutlinedButton}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"
+                                                 VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Verifica" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -111,11 +119,14 @@
                     <ComboBox ItemsSource="{Binding AudioInputDevices}" SelectedItem="{Binding SelectedAudioDevice}"
                               DisplayMemberPath="Name" IsEnabled="{Binding CanSelectAudioDevice}"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              MinHeight="34" Height="36" Padding="8,3" FontSize="12"
+                              VerticalContentAlignment="Center"
                               materialDesign:HintAssist.Hint="Seleziona il microfono"/>
-                    <Button Grid.Column="1" Click="RefreshAudioDevices_Click" Width="42" Height="38"
-                            Margin="8,0,0,0" ToolTip="Aggiorna elenco microfoni" Style="{StaticResource MaterialDesignOutlinedButton}"
+                    <Button Grid.Column="1" Click="RefreshAudioDevices_Click" Width="40" MinWidth="40" Height="36" Padding="0"
+                            Margin="8,0,0,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            ToolTip="Aggiorna elenco microfoni" Style="{StaticResource MaterialDesignOutlinedButton}"
                             IsEnabled="{Binding CanSelectAudioDevice}">
-                        <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
+                        <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"/>
                     </Button>
                 </Grid>
                 <TextBlock Text="Puoi aggiornare l'elenco dopo aver collegato la cuffia wireless. La selezione è bloccata durante l'ascolto."
