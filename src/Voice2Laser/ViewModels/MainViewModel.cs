@@ -192,7 +192,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         LoadPreferredAudioDevice();
         LoadVoiceSettings();
         _speech.VoiceActivationThresholdDb = _voiceThresholdDb;
-        _speech.MinimumRecognitionConfidence = _minimumConfidence;
         _speech.RecognitionReceived += OnRecognition;
         _speech.AudioLevelChanged += OnAudioLevel;
         _speech.StatusChanged += message => Application.Current.Dispatcher.BeginInvoke(() => Status = message);
