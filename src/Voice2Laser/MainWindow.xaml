@@ -114,16 +114,12 @@
                                Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <Button Grid.Column="1" Click="CheckEzCad_Click"
-                        Width="112" MinWidth="112" Height="40" Padding="8,0"
-                        Margin="12,0,0,0" VerticalAlignment="Center"
+                        Width="40" MinWidth="40" Height="36" Padding="0"
+                        Margin="8,0,0,0" VerticalAlignment="Center"
                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        ToolTip="Ricontrolla la connessione a EZCAD2"
                         Style="{StaticResource MaterialDesignOutlinedButton}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"
-                                                 VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Verifica" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"/>
                 </Button>
             </Grid>
         </Border>
