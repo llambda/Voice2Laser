@@ -99,9 +99,11 @@ public sealed class VoskSpeechService : IDisposable
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.TryGetProperty("text", out var value)
-                ? value.GetString() ?? string.Empty
-                : string.Empty;
+            if (doc.RootElement.TryGetProperty("text", out var finalValue))
+                return finalValue.GetString() ?? string.Empty;
+            if (doc.RootElement.TryGetProperty("partial", out var partialValue))
+                return partialValue.GetString() ?? string.Empty;
+            return string.Empty;
         }
         catch (JsonException) { return string.Empty; }
     }
