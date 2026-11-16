@@ -30,6 +30,43 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _speech.StatusChanged += message => Application.Current.Dispatcher.Invoke(() => Status = message);
     }
 
+    public void VerifyModel()
+    {
+        var path = ModelPath?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+        {
+            Status = "Modello non trovato: controlla il percorso indicato.";
+            MessageBox.Show($"La cartella del modello Vosk non esiste:\n\n{path}", "Verifica modello",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string[] requiredFiles =
+        [
+            Path.Combine("am", "final.mdl"),
+            Path.Combine("conf", "model.conf"),
+            Path.Combine("graph", "Gr.fst"),
+            Path.Combine("graph", "HCLr.fst")
+        ];
+
+        var missingFiles = requiredFiles
+            .Where(file => !File.Exists(Path.Combine(path, file)))
+            .ToArray();
+
+        if (missingFiles.Length > 0)
+        {
+            var missingList = string.Join(Environment.NewLine, missingFiles.Select(file => "• " + file));
+            Status = "Cartella trovata, ma il modello risulta incompleto.";
+            MessageBox.Show($"La cartella esiste, ma mancano alcuni file essenziali:\n\n{missingList}\n\nEstrai nuovamente il modello Vosk completo.",
+                "Modello incompleto", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        Status = "Modello Vosk presente: struttura dei file verificata.";
+        MessageBox.Show($"Modello Vosk trovato e struttura essenziale verificata.\n\nPercorso:\n{path}",
+            "Verifica completata", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
     public void Start()
     {
         try
