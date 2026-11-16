@@ -24,6 +24,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool? _modelExists;
     private bool _isListening;
     private AudioInputDevice? _selectedAudioDevice;
+    private double _audioLevelDb = -60.0;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
@@ -55,6 +56,19 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
     public bool CanSelectAudioDevice => !IsListening;
+    public double AudioLevelDb
+    {
+        get => _audioLevelDb;
+        private set
+        {
+            if (!Set(ref _audioLevelDb, value)) return;
+            OnPropertyChanged(nameof(AudioLevelPercent));
+            OnPropertyChanged(nameof(AudioLevelText));
+        }
+    }
+    public double AudioLevelPercent => Math.Clamp((AudioLevelDb + 60.0) / 60.0 * 100.0, 0.0, 100.0);
+    public string AudioLevelText => AudioLevelDb <= -59.9 ? "Segnale assente o molto debole" : $"{AudioLevelDb:0} dB";
+
     public AudioInputDevice? SelectedAudioDevice
     {
         get => _selectedAudioDevice;
@@ -66,6 +80,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public MainViewModel()
     {
         _speech.RecognitionReceived += OnRecognition;
+        _speech.AudioLevelChanged += OnAudioLevel;
         _speech.StatusChanged += message => Application.Current.Dispatcher.Invoke(() => Status = message);
         CheckModelAvailability();
         RefreshAudioDevices();
@@ -158,8 +173,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public void Stop()
     {
         _speech.Stop();
+        AudioLevelDb = -60.0;
         IsListening = false;
         Status = "Ascolto fermato";
+    }
+
+    private void OnAudioLevel(double levelDb)
+    {
+        Application.Current.Dispatcher.BeginInvoke(() => AudioLevelDb = levelDb);
     }
 
     private void OnRecognition(string text, bool isFinal)
