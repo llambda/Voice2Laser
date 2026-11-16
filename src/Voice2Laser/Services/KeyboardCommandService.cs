@@ -14,7 +14,6 @@ public sealed class KeyboardCommandService
     private const uint WmKeyDown = 0x0100;
     private const uint WmKeyUp = 0x0101;
     private const uint MapVkToVsc = 0;
-    private const uint MapVkToVscEx = 4;
 
     private const ushort VkEscape = 0x1B;
     private const ushort VkF1 = 0x70;
@@ -197,7 +196,7 @@ public sealed class KeyboardCommandService
         if (keyUp)
             value |= (1L << 30) | (1L << 31);
 
-        return new IntPtr(value);
+        return new IntPtr(unchecked((int)value));
     }
 
     [DllImport("user32.dll", SetLastError = true)]
