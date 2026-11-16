@@ -110,7 +110,7 @@
                         <TextBlock Text="{Binding EzCadStatus}" Foreground="#334155"
                                    VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <TextBlock Text="Il controllo verifica il processo EZCAD2 e l'accessibilità della sua finestra principale."
+                    <TextBlock Text="Per inviare i tasti, EZCAD2 deve essere già la finestra attiva. Voice2Laser non cambia automaticamente il focus e blocca l'invio se EZCAD2 non è in primo piano."
                                Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
                     <CheckBox Content="ABILITA INVIO REALE A EZCAD2"
                               IsChecked="{Binding IsLiveInputEnabled, Mode=TwoWay}"
