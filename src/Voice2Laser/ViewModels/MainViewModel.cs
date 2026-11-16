@@ -48,6 +48,20 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public bool EzCadConnected { get => _ezCadConnected; private set => Set(ref _ezCadConnected, value); }
     public string EzCadStatus { get => _ezCadStatus; private set => Set(ref _ezCadStatus, value); }
 
+    // Rimane disattivato a ogni avvio: l'invio reale richiede un'attivazione esplicita.
+    private bool _isLiveInputEnabled;
+    public bool IsLiveInputEnabled
+    {
+        get => _isLiveInputEnabled;
+        set
+        {
+            if (!Set(ref _isLiveInputEnabled, value)) return;
+            Status = value
+                ? "INVIO REALE ATTIVO: i comandi riconosciuti possono agire su EZCAD2."
+                : "Modalità test attiva: nessun tasto viene inviato.";
+        }
+    }
+
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string ModelPath
     {
@@ -350,12 +364,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                     {
                         _lastRecognizedActionTimes[matchedCommand.ActionId] = now;
 
-                        var connectionOk = _keyboardCommands.CheckConnection(out _);
-                        var keyDescription = KeyboardCommandService.GetKeyDescription(matchedCommand.ActionId);
-                        var targetStatus = connectionOk ? "EZCAD2 rilevato" : "EZCAD2 non rilevato";
-                        var testMessage = $"TEST: sarebbe inviato {keyDescription} — {targetStatus}. Nessun tasto inviato.";
-                        Status = testMessage;
-                        actionName = $"{actionName} — {testMessage}";
+                        if (IsLiveInputEnabled)
+                        {
+                            _keyboardCommands.TryExecute(matchedCommand.ActionId, out var sendMessage);
+                            Status = sendMessage;
+                            actionName = $"{actionName} — {sendMessage}";
+                        }
+                        else
+                        {
+                            var connectionOk = _keyboardCommands.CheckConnection(out _);
+                            var keyDescription = KeyboardCommandService.GetKeyDescription(matchedCommand.ActionId);
+                            var targetStatus = connectionOk ? "EZCAD2 rilevato" : "EZCAD2 non rilevato";
+                            var testMessage = $"TEST: sarebbe inviato {keyDescription} — {targetStatus}. Nessun tasto inviato.";
+                            Status = testMessage;
+                            actionName = $"{actionName} — {testMessage}";
+                        }
                     }
                 }
 
