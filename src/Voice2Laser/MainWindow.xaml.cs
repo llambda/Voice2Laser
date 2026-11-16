@@ -15,6 +15,7 @@ public partial class MainWindow : Window
 
     private void Start_Click(object sender, RoutedEventArgs e) => _viewModel.Start();
     private void Stop_Click(object sender, RoutedEventArgs e) => _viewModel.Stop();
+    private void RefreshAudioDevices_Click(object sender, RoutedEventArgs e) => _viewModel.RefreshAudioDevices();
 
     protected override void OnClosed(EventArgs e)
     {
