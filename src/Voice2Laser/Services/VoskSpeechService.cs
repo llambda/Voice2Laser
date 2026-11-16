@@ -15,6 +15,11 @@ public sealed class VoskSpeechService : IDisposable
     private VoskRecognizer? _recognizer;
     private WaveInEvent? _waveIn;
     private bool _disposed;
+    private int _voiceHangoverFrames;
+
+    // Soglia iniziale prudente; da calibrare quando sarà disponibile il microfono reale.
+    private const double VoiceActivationThresholdDb = -42.0;
+    private const int VoiceHangoverFrameCount = 5; // 5 x 50 ms = 250 ms
 
     public event Action<string, bool>? RecognitionReceived;
     public event Action<string>? StatusChanged;
@@ -87,7 +92,19 @@ public sealed class VoskSpeechService : IDisposable
         lock (_sync)
         {
             if (!IsListening || _recognizer is null) return;
-            if (_recognizer.AcceptWaveform(e.Buffer, e.BytesRecorded))
+
+            // Apre il gate sopra soglia e lo mantiene per 250 ms per non troncare
+            // le code delle parole. Nei periodi di rumore debole invia silenzio a Vosk.
+            if (levels.RmsDb >= VoiceActivationThresholdDb)
+                _voiceHangoverFrames = VoiceHangoverFrameCount;
+            else if (_voiceHangoverFrames > 0)
+                _voiceHangoverFrames--;
+
+            var audioBuffer = levels.RmsDb >= VoiceActivationThresholdDb || _voiceHangoverFrames > 0
+                ? e.Buffer
+                : new byte[e.BytesRecorded];
+
+            if (_recognizer.AcceptWaveform(audioBuffer, e.BytesRecorded))
             {
                 var text = ReadText(_recognizer.Result());
                 if (!string.IsNullOrWhiteSpace(text) && text != "[unk]")
