@@ -17,7 +17,6 @@ public sealed class VoskSpeechService : IDisposable
     private bool _disposed;
     private int _voiceHangoverFrames;
     private double _voiceActivationThresholdDb = -42.0;
-    private double _minimumRecognitionConfidence = 0.55;
 
     // Valori regolabili e persistiti dal ViewModel.
     private const int VoiceHangoverFrameCount = 5; // 5 x 50 ms = 250 ms
@@ -30,11 +29,6 @@ public sealed class VoskSpeechService : IDisposable
         set { lock (_sync) _voiceActivationThresholdDb = Math.Clamp(value, -60.0, -20.0); }
     }
 
-    public double MinimumRecognitionConfidence
-    {
-        get { lock (_sync) return _minimumRecognitionConfidence; }
-        set { lock (_sync) _minimumRecognitionConfidence = Math.Clamp(value, 0.0, 1.0); }
-    }
     public event Action<string>? StatusChanged;
     public event Action<double, double>? AudioLevelChanged;
 
@@ -200,11 +194,8 @@ public sealed class VoskSpeechService : IDisposable
 
     private void OnRecordingStopped(object? sender, StoppedEventArgs e)
     {
-        IsListening = false;
         if (e.Exception is not null)
-            StatusChanged?.Invoke($"Errore audio: {e.Exception.Message}. Ascolto interrotto.");
-        else
-            StatusChanged?.Invoke("Acquisizione audio terminata.");
+            StatusChanged?.Invoke($"Errore audio: {e.Exception.Message}");
     }
 
     private void CleanupAudio()
