@@ -38,20 +38,31 @@ public sealed class KeyboardCommandService
 
         try
         {
-            var target = Process.GetProcessesByName(TargetProcessName)
-                .FirstOrDefault(process =>
+            var windowHandle = IntPtr.Zero;
+            foreach (var process in Process.GetProcessesByName(TargetProcessName))
+            {
+                using (process)
                 {
-                    try { return process.MainWindowHandle != IntPtr.Zero; }
-                    catch { return false; }
-                });
+                    try
+                    {
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            windowHandle = process.MainWindowHandle;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        // Il processo può terminare mentre viene enumerato.
+                    }
+                }
+            }
 
-            if (target is null)
+            if (windowHandle == IntPtr.Zero)
             {
                 message = "EZCAD2 non trovato: nessun tasto inviato.";
                 return true;
             }
-
-            var windowHandle = target.MainWindowHandle;
             ShowWindowAsync(windowHandle, SwRestore);
             SetForegroundWindow(windowHandle);
 
