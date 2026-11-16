@@ -1,38 +1,51 @@
 using System.Text.Json;
+using Voice2Laser.Models;
 
 namespace Voice2Laser.Services;
 
 /// <summary>
-/// Vocabolario chiuso per il prototipo. Le azioni sono descrittive:
-/// nessun tasto viene inviato a Windows/EZCAD2 in questa fase.
+/// Catalogo delle frasi vocali. Le azioni sono solo descrittive:
+/// in questa fase non viene inviato alcun tasto a Windows o EZCAD2.
 /// </summary>
 public static class CommandCatalog
 {
-    public static IReadOnlyList<string> Phrases { get; } =
+    public static IReadOnlyList<CommandAction> AvailableActions { get; } =
     [
-        "apri file",
-        "apri progetto",
-        "salva",
-        "annulla",
-        "stop",
-        "conferma",
-        "zoom avanti",
-        "zoom indietro"
+        new("open_file", "Apri file"),
+        new("open_project", "Apri progetto"),
+        new("save", "Salva"),
+        new("cancel", "Annulla"),
+        new("stop", "Stop"),
+        new("confirm", "Conferma"),
+        new("zoom_in", "Zoom avanti"),
+        new("zoom_out", "Zoom indietro")
     ];
 
-    public static string GrammarJson =>
-        JsonSerializer.Serialize(Phrases.Concat(["[unk]"]));
+    public static IReadOnlyList<VoiceCommand> CreateDefaults() =>
+    [
+        new("apri file", "open_file"),
+        new("apri progetto", "open_project"),
+        new("salva", "save"),
+        new("annulla", "cancel"),
+        new("stop", "stop"),
+        new("conferma", "confirm"),
+        new("zoom avanti", "zoom_in"),
+        new("zoom indietro", "zoom_out")
+    ];
 
-    public static string Describe(string phrase) => phrase switch
+    public static string BuildGrammar(IEnumerable<VoiceCommand> commands)
     {
-        "apri file" => "Richiesta: apri file",
-        "apri progetto" => "Richiesta: apri progetto",
-        "salva" => "Richiesta: salva",
-        "annulla" => "Richiesta: annulla",
-        "stop" => "Richiesta: stop",
-        "conferma" => "Richiesta: conferma",
-        "zoom avanti" => "Richiesta: zoom avanti",
-        "zoom indietro" => "Richiesta: zoom indietro",
-        _ => "Comando non associato"
-    };
+        var phrases = commands
+            .Select(command => command.Phrase?.Trim())
+            .Where(phrase => !string.IsNullOrWhiteSpace(phrase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Cast<string>()
+            .Append("[unk]");
+
+        return JsonSerializer.Serialize(phrases);
+    }
+
+    public static string GetActionName(string actionId) =>
+        AvailableActions.FirstOrDefault(action => action.Id == actionId)?.Name
+        ?? "Azione non riconosciuta";
 }
