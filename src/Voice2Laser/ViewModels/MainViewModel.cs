@@ -19,6 +19,7 @@ public sealed record AudioInputDevice(int DeviceNumber, string Name);
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly VoskSpeechService _speech = new();
+    private readonly CommandSettingsService _commandSettings = new();
     private readonly DispatcherTimer _deviceMonitor;
     private readonly string _settingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -36,9 +37,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private string? _preferredAudioDeviceName;
     private bool _isRefreshingDevices;
     private bool _disposed;
+    private VoiceCommand? _selectedCommand;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
+    public ObservableCollection<VoiceCommand> Commands { get; } = [];
+    public IReadOnlyList<CommandAction> AvailableActions => CommandCatalog.AvailableActions;
+    public VoiceCommand? SelectedCommand { get => _selectedCommand; set => Set(ref _selectedCommand, value); }
 
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string ModelPath
@@ -119,6 +124,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public MainViewModel()
     {
         LoadPreferredAudioDevice();
+        foreach (var command in _commandSettings.Load()) Commands.Add(command);
         _speech.RecognitionReceived += OnRecognition;
         _speech.AudioLevelChanged += OnAudioLevel;
         _speech.StatusChanged += message => Application.Current.Dispatcher.BeginInvoke(() => Status = message);
@@ -265,6 +271,71 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         Status = ModelStatusText;
     }
 
+
+    public void AddCommand()
+    {
+        var command = new VoiceCommand("nuova frase", "save");
+        Commands.Add(command);
+        SelectedCommand = command;
+    }
+
+    public void RemoveSelectedCommand()
+    {
+        if (SelectedCommand is null) return;
+        Commands.Remove(SelectedCommand);
+        SelectedCommand = null;
+    }
+
+    public void SaveCommandConfiguration()
+    {
+        if (!ValidateCommands()) return;
+        try
+        {
+            _commandSettings.Save(Commands);
+            Status = "Comandi vocali salvati. Le modifiche saranno applicate al prossimo avvio dell'ascolto.";
+            MessageBox.Show(Status, "Voice2Laser", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Status = $"Impossibile salvare i comandi: {ex.Message}";
+            MessageBox.Show(Status, "Voice2Laser", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private bool ValidateCommands()
+    {
+        var phrases = Commands.Select(command => command.Phrase.Trim()).ToList();
+        if (phrases.Any(string.IsNullOrWhiteSpace))
+        {
+            Status = "Ogni comando deve avere una frase vocale.";
+            MessageBox.Show(Status, "Comandi non validi", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (phrases.Distinct(StringComparer.OrdinalIgnoreCase).Count() != phrases.Count)
+        {
+            Status = "Ci sono frasi duplicate. Ogni frase deve essere univoca; puoi associare più frasi alla stessa azione.";
+            MessageBox.Show(Status, "Comandi duplicati", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (Commands.Any(command => !AvailableActions.Any(action => action.Id == command.ActionId)))
+        {
+            Status = "Seleziona un'azione valida per ogni frase.";
+            MessageBox.Show(Status, "Azione non valida", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        if (Commands.Count == 0)
+        {
+            Status = "Aggiungi almeno una frase vocale.";
+            MessageBox.Show(Status, "Nessun comando", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        return true;
+    }
+
     public void Start()
     {
         if (SelectedAudioDevice is null)
@@ -276,7 +347,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         try
         {
-            _speech.Start(ModelPath, SelectedAudioDevice.DeviceNumber);
+            if (!ValidateCommands()) return;
+            _speech.Start(ModelPath, SelectedAudioDevice.DeviceNumber, Commands.ToList());
             IsListening = true;
         }
         catch (Exception ex)
