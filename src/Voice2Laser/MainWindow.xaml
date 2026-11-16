@@ -25,7 +25,7 @@
                     <TextBlock Text="{Binding Status}" Foreground="#475569" Margin="0,8,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Button Content="Avvia ascolto" Click="Start_Click" IsEnabled="{Binding IsListening, Converter={x:Static BooleanBoxes.FalseBox}}"/>
+                    <Button Content="Avvia ascolto" Click="Start_Click"/>
                     <Button Content="Ferma" Click="Stop_Click"/>
                 </StackPanel>
             </Grid>
