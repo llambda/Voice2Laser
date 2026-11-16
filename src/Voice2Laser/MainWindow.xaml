@@ -4,7 +4,6 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Voice2Laser" Height="900" Width="1120" MinHeight="720" MinWidth="860"
         Background="{DynamicResource AppBackgroundBrush}" WindowStartupLocation="CenterScreen">
-ces>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
