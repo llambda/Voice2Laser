@@ -9,6 +9,7 @@
     <AssemblyName>Voice2Laser</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Vosk" Version="0.3.38" />
   </ItemGroup>
