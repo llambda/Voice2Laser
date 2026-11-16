@@ -20,6 +20,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly VoskSpeechService _speech = new();
     private readonly CommandSettingsService _commandSettings = new();
+    private readonly KeyboardCommandService _keyboardCommands = new();
     private readonly DispatcherTimer _deviceMonitor;
     private readonly string _settingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -388,6 +389,14 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 var actionName = matchedCommand is null
                     ? "Non associato"
                     : CommandCatalog.GetActionName(matchedCommand.ActionId);
+
+                if (matchedCommand is not null &&
+                    _keyboardCommands.TryExecute(matchedCommand.ActionId, out var executionStatus))
+                {
+                    Status = executionStatus;
+                    actionName = $"{actionName} — {executionStatus}";
+                }
+
                 Events.Insert(0, new RecognitionEvent(DateTime.Now, text, actionName));
                 while (Events.Count > 200) Events.RemoveAt(Events.Count - 1);
             }
