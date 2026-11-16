@@ -52,7 +52,7 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,18">
             <TextBlock Text="Voice2Laser" FontSize="28" FontWeight="SemiBold" Foreground="#172B4D"/>
-            <TextBlock Text="Controllo vocale offline per EZCAD2 – prototipo di riconoscimento"
+            <TextBlock Text="Controllo vocale offline per EZCAD2 – comandi vocali e tastiera"
                        Foreground="#64748B" FontSize="13" Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -147,7 +147,7 @@
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                     <TextBlock Text="CONFIGURAZIONE COMANDI VOCALI" FontSize="15" FontWeight="SemiBold" Foreground="#172B4D"/>
-                    <TextBlock Text="Aggiungi più frasi per la stessa azione. Le frasi vengono salvate sul PC e caricate al prossimo avvio dell'ascolto."
+                    <TextBlock Text="Aggiungi più frasi per la stessa azione. Anteprima invia F1, Start/Go invia F2 e Stop invia ESC direttamente a EZCAD2."
                                Foreground="#64748B" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
@@ -191,7 +191,7 @@
                 </DataGrid>
             </DockPanel>
         </Border>
-        <TextBlock Grid.Row="6" Text="MODALITÀ TEST: nessun tasto viene inviato a EZCAD2. Non usare il riconoscimento vocale come sistema di sicurezza."
+        <TextBlock Grid.Row="6" Text="COMANDI ATTIVI: F1 anteprima · F2 start/go · ESC stop. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
                    Foreground="#9A3412" FontWeight="SemiBold" TextWrapping="Wrap" Margin="2,12,2,0"/>
     </Grid>
 </Window>
