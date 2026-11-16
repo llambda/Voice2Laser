@@ -23,47 +23,64 @@
 
         <Border Grid.Row="1" Background="{DynamicResource AppSurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,0,12">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="Modello Vosk italiano" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                    <DockPanel LastChildFill="True">
-                        <materialDesign:PackIcon DockPanel.Dock="Right" Width="28" Height="28"
-                                                 Margin="10,0,2,0" VerticalAlignment="Center"
-                                                 ToolTip="{Binding ModelStatusText}">
-                            <materialDesign:PackIcon.Style>
-                                <Style TargetType="{x:Type materialDesign:PackIcon}">
-                                    <Setter Property="Kind" Value="Close"/>
-                                    <Setter Property="Foreground" Value="#DC2626"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ModelExists}" Value="True">
-                                            <Setter Property="Kind" Value="Check"/>
-                                            <Setter Property="Foreground" Value="#16A34A"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </materialDesign:PackIcon.Style>
-                        </materialDesign:PackIcon>
-                        <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                 MinHeight="34" Height="36" Padding="8,4" FontSize="12"
-                                 VerticalContentAlignment="Center"/>
-                    </DockPanel>
-                    <TextBlock Text="{Binding Status}" Foreground="#475569" Margin="0,8,0,0"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Button Click="Start_Click" Style="{StaticResource MaterialDesignRaisedButton}" Background="{DynamicResource PrimaryHueMidBrush}">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Microphone" Width="18" Height="18" Margin="0,0,8,0"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Modello Vosk italiano"
+                           FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <DockPanel Grid.Row="1" Grid.Column="0" LastChildFill="True">
+                    <materialDesign:PackIcon DockPanel.Dock="Right" Width="28" Height="28"
+                                             Margin="10,0,2,0" VerticalAlignment="Center"
+                                             ToolTip="{Binding ModelStatusText}">
+                        <materialDesign:PackIcon.Style>
+                            <Style TargetType="{x:Type materialDesign:PackIcon}">
+                                <Setter Property="Kind" Value="Close"/>
+                                <Setter Property="Foreground" Value="#DC2626"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ModelExists}" Value="True">
+                                        <Setter Property="Kind" Value="Check"/>
+                                        <Setter Property="Foreground" Value="#16A34A"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </materialDesign:PackIcon.Style>
+                    </materialDesign:PackIcon>
+                    <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             MinHeight="34" Height="36" Padding="8,4" FontSize="12"
+                             VerticalContentAlignment="Center"/>
+                </DockPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button Click="Start_Click" Height="36" MinHeight="36" Padding="12,0"
+                            VerticalContentAlignment="Center"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="{DynamicResource PrimaryHueMidBrush}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Microphone" Width="18" Height="18"
+                                                     Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Avvia ascolto" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Click="Stop_Click" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="4">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Stop" Width="18" Height="18" Margin="0,0,8,0"/>
+                    <Button Click="Stop_Click" Height="36" MinHeight="36" Padding="12,0"
+                            Margin="6,0,0,0" VerticalContentAlignment="Center"
+                            Style="{StaticResource MaterialDesignOutlinedButton}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Stop" Width="18" Height="18"
+                                                     Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Ferma" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
+                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                           Text="{Binding Status}" Foreground="#475569" Margin="0,8,0,0"/>
             </Grid>
         </Border>
 
