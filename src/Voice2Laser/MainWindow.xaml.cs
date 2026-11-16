@@ -15,6 +15,7 @@ public partial class MainWindow : Window
 
     private void Start_Click(object sender, RoutedEventArgs e) => _viewModel.Start();
     private void Stop_Click(object sender, RoutedEventArgs e) => _viewModel.Stop();
+    private void CheckEzCad_Click(object sender, RoutedEventArgs e) => _viewModel.CheckEzCadConnection();
     private void RefreshAudioDevices_Click(object sender, RoutedEventArgs e) => _viewModel.RefreshAudioDevices();
     private void AddCommand_Click(object sender, RoutedEventArgs e) => _viewModel.AddCommand();
     private void RemoveCommand_Click(object sender, RoutedEventArgs e) => _viewModel.RemoveSelectedCommand();
