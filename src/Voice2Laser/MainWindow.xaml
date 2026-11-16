@@ -115,7 +115,18 @@
                     </Button>
                 </Grid>
                 <TextBlock Text="Puoi aggiornare l'elenco dopo aver collegato la cuffia wireless. La selezione è bloccata durante l'ascolto."
-                           Foreground="#64748B" FontSize="12" Margin="0,7,0,0" TextWrapping="Wrap"/>
+                           Foreground="#64748B" FontSize="12" Margin="0,7,0,10" TextWrapping="Wrap"/>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="LIVELLO AUDIO IN INGRESSO" FontSize="10" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,5"/>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding AudioLevelPercent}" Height="12"
+                                     Background="#E2E8F0" Foreground="#16A34A" BorderThickness="0"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding AudioLevelText}" MinWidth="150"
+                               TextAlignment="Right" VerticalAlignment="Bottom" Margin="12,0,0,0"
+                               Foreground="#334155" FontWeight="SemiBold"/>
+                </Grid>
             </StackPanel>
         </Border>
 
