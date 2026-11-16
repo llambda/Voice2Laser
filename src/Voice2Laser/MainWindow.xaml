@@ -112,8 +112,13 @@
                     </StackPanel>
                     <TextBlock Text="Il controllo verifica il processo EZCAD2 e l'accessibilità della sua finestra principale."
                                Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                    <TextBlock Text="MODALITÀ TEST ATTIVA · nessun tasto viene inviato"
-                               Foreground="#166534" FontSize="11" FontWeight="Bold" Margin="0,9,0,0"/>
+                    <CheckBox Content="ABILITA INVIO REALE A EZCAD2"
+                              IsChecked="{Binding IsLiveInputEnabled, Mode=TwoWay}"
+                              Foreground="#B91C1C" FontSize="12" FontWeight="Bold"
+                              Margin="0,10,0,0"
+                              ToolTip="Disattivato per impostazione predefinita. Se attivato, i comandi vocali inviano i tasti a EZCAD2."/>
+                    <TextBlock Text="Se disattivato, resta attiva la modalità test e non viene inviato alcun tasto. Attivare solo con area laser in condizioni sicure e presidiata."
+                               Foreground="#9A3412" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <Button Grid.Column="1" Click="CheckEzCad_Click"
                         Width="40" MinWidth="40" Height="36" Padding="0"
