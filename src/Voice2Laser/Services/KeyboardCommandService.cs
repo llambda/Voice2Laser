@@ -1,19 +1,21 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Voice2Laser.Services;
 
 /// <summary>
-/// Invio limitato di F1/F2/ESC e frecce direzionali alla finestra principale di EZCAD2.
-/// Non invia input se EZCAD2 non è la finestra effettivamente in primo piano.
+/// Invio sperimentale di messaggi tastiera alla finestra principale di EZCAD2.
+/// Non modifica il focus e non usa SendInput: i messaggi sono indirizzati
+/// direttamente all'handle della finestra appartenente al processo EzCad2.
 /// </summary>
 public sealed class KeyboardCommandService
 {
-    private const uint InputKeyboard = 1;
-    private const uint KeyUp = 0x0002;
+    private const uint WmKeyDown = 0x0100;
+    private const uint WmKeyUp = 0x0101;
+    private const uint MapVkToVsc = 0;
+    private const uint MapVkToVscEx = 4;
+
     private const ushort VkEscape = 0x1B;
     private const ushort VkF1 = 0x70;
     private const ushort VkF2 = 0x71;
@@ -27,46 +29,32 @@ public sealed class KeyboardCommandService
     {
         try
         {
-            var processes = Process.GetProcessesByName(TargetProcessName);
-            if (processes.Length == 0)
+            foreach (var process in Process.GetProcessesByName(TargetProcessName))
             {
-                message = "EZCAD2 non è in esecuzione.";
-                return false;
-            }
-
-            try
-            {
-                foreach (var process in processes)
+                using (process)
                 {
-                    using (process)
+                    try
                     {
-                        try
-                        {
-                            var processId = process.Id;
-                            var windowHandle = process.MainWindowHandle;
-                            if (windowHandle == IntPtr.Zero || !IsWindow(windowHandle))
-                                continue;
+                        var processId = process.Id;
+                        var windowHandle = process.MainWindowHandle;
+                        if (windowHandle == IntPtr.Zero || !IsWindow(windowHandle))
+                            continue;
 
-                            GetWindowThreadProcessId(windowHandle, out var windowProcessId);
-                            if (windowProcessId == (uint)processId)
-                            {
-                                message = $"EZCAD2 è in esecuzione e raggiungibile. Finestra: {process.MainWindowTitle}";
-                                return true;
-                            }
-                        }
-                        catch
+                        GetWindowThreadProcessId(windowHandle, out var windowProcessId);
+                        if (windowProcessId == (uint)processId)
                         {
-                            // Il processo può terminare o negare l'accesso durante il controllo.
+                            message = $"EZCAD2 è in esecuzione e raggiungibile. Finestra: {process.MainWindowTitle}";
+                            return true;
                         }
+                    }
+                    catch
+                    {
+                        // Il processo può terminare o negare l'accesso durante il controllo.
                     }
                 }
             }
-            finally
-            {
-                // I processi vengono rilasciati nel ciclo.
-            }
 
-            message = "EZCAD2 è in esecuzione, ma non è stata trovata una finestra principale accessibile.";
+            message = "EZCAD2 non è in esecuzione oppure la sua finestra principale non è accessibile.";
             return false;
         }
         catch (Exception ex)
@@ -74,39 +62,6 @@ public sealed class KeyboardCommandService
             message = $"Verifica EZCAD2 non riuscita: {ex.Message}";
             return false;
         }
-    }
-
-    public bool IsEzCadForeground(out string message)
-    {
-        try
-        {
-            foreach (var process in Process.GetProcessesByName(TargetProcessName))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        var handle = process.MainWindowHandle;
-                        if (handle == IntPtr.Zero || !IsWindow(handle)) continue;
-                        GetWindowThreadProcessId(handle, out var pid);
-                        if (pid == (uint)process.Id && IsTargetForegroundWindow(handle, pid))
-                        {
-                            message = "EZCAD2 è la finestra attiva.";
-                            return true;
-                        }
-                    }
-                    catch { /* Il processo può chiudersi durante il controllo. */ }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            message = $"Verifica focus EZCAD2 non riuscita: {ex.Message}";
-            return false;
-        }
-
-        message = "EZCAD2 non è in primo piano. Nessun comando verrà inviato.";
-        return false;
     }
 
     public static string GetKeyDescription(string actionId) => actionId switch
@@ -175,111 +130,85 @@ public sealed class KeyboardCommandService
 
             if (windowHandle == IntPtr.Zero || targetProcessId == 0)
             {
-                message = "Finestra principale di EZCAD2 non trovata: nessun tasto inviato.";
+                message = "Finestra principale di EZCAD2 non trovata: nessun messaggio inviato.";
                 return true;
             }
 
-            var inputs = new[]
+            // Ricontrolla handle e PID immediatamente prima dell'invio, per evitare
+            // di spedire messaggi a un handle riciclato appartenente a un'altra app.
+            if (!IsWindow(windowHandle))
             {
-                CreateKeyboardInput(virtualKey, 0),
-                CreateKeyboardInput(virtualKey, KeyUp)
-            };
-
-            // Non portare EZCAD2 in primo piano automaticamente: l'operatore deve
-            // selezionarlo esplicitamente. Verifica il focus immediatamente prima di SendInput.
-            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
-            {
-                message = "EZCAD2 non è la finestra attiva: tasto bloccato. Seleziona EZCAD2 e riprova.";
+                message = "La finestra di EZCAD2 non è più disponibile. Comando non inviato.";
                 return true;
             }
 
-            // SendInput è globale: il controllo del focus riduce il rischio, ma non elimina
-            // la brevissima race condition in cui Windows potrebbe cambiare finestra attiva.
-            var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-            var error = Marshal.GetLastWin32Error();
-            if (sent == 1)
+            GetWindowThreadProcessId(windowHandle, out var currentProcessId);
+            if (currentProcessId != targetProcessId)
             {
-                // Se Windows ha accettato solo il key-down, prova sempre a rilasciare il tasto.
-                var releaseSent = SendInput(1, new[] { CreateKeyboardInput(virtualKey, KeyUp) }, Marshal.SizeOf<INPUT>());
-                message = releaseSent == 1
-                    ? $"Invio di {keyName} parziale; rilascio del tasto completato."
-                    : $"Invio di {keyName} parziale: anche il rilascio non è stato confermato.";
-            }
-            else
-            {
-                message = sent == (uint)inputs.Length
-                    ? $"Inviato {keyName} a EZCAD2."
-                    : $"Invio di {keyName} non riuscito (errore Windows {error}). Nessun esito garantito.";
+                message = "La finestra individuata non appartiene più a EZCAD2. Comando bloccato.";
+                return true;
             }
 
+            var scanCode = MapVirtualKey(virtualKey, MapVkToVsc);
+            if (scanCode == 0)
+            {
+                message = $"Impossibile ricavare lo scan code per {keyName}.";
+                return true;
+            }
+
+            var isExtendedKey = virtualKey is VkUp or VkDown or VkLeft or VkRight;
+            var keyDownLParam = BuildKeyLParam(scanCode, isExtendedKey, keyUp: false);
+            var keyUpLParam = BuildKeyLParam(scanCode, isExtendedKey, keyUp: true);
+
+            // PostMessage accoda i messaggi alla coda della finestra di EZCAD2.
+            // Il valore true conferma l'accodamento, NON che EZCAD2 abbia eseguito l'azione.
+            var keyDownPosted = PostMessage(windowHandle, WmKeyDown, new IntPtr(virtualKey), keyDownLParam);
+            if (!keyDownPosted)
+            {
+                var error = Marshal.GetLastWin32Error();
+                message = $"Invio di {keyName} non riuscito (PostMessage, errore Windows {error}).";
+                return true;
+            }
+
+            var keyUpPosted = PostMessage(windowHandle, WmKeyUp, new IntPtr(virtualKey), keyUpLParam);
+            if (!keyUpPosted)
+            {
+                var error = Marshal.GetLastWin32Error();
+                message = $"Pressione di {keyName} accodata, ma rilascio non confermato (errore Windows {error}).";
+                return true;
+            }
+
+            message = $"Messaggi {keyName} accodati alla finestra di EZCAD2 (esito dell'azione da verificare).";
             return true;
         }
         catch (Exception ex)
         {
-            message = $"Invio tasto non riuscito: {ex.Message}";
+            message = $"Invio messaggio a EZCAD2 non riuscito: {ex.Message}";
             return true;
         }
     }
 
-    private static bool IsTargetForegroundWindow(IntPtr expectedWindow, uint expectedProcessId)
+    private static IntPtr BuildKeyLParam(uint scanCode, bool extended, bool keyUp)
     {
-        var foregroundWindow = GetForegroundWindow();
-        if (foregroundWindow == IntPtr.Zero || foregroundWindow != expectedWindow)
-            return false;
+        long value = 1L | ((long)(scanCode & 0xFF) << 16);
+        if (extended)
+            value |= 1L << 24;
 
-        GetWindowThreadProcessId(foregroundWindow, out var foregroundProcessId);
-        return foregroundProcessId == expectedProcessId;
+        if (keyUp)
+            value |= (1L << 30) | (1L << 31);
+
+        return new IntPtr(value);
     }
-
-    private static INPUT CreateKeyboardInput(ushort virtualKey, uint flags) => new()
-    {
-        Type = InputKeyboard,
-        Data = new INPUTUNION
-        {
-            Keyboard = new KEYBDINPUT
-            {
-                VirtualKey = virtualKey,
-                ScanCode = 0,
-                Flags = flags,
-                Time = 0,
-                ExtraInfo = UIntPtr.Zero
-            }
-        }
-    };
-
-    [DllImport("user32.dll")]
-    private static extern bool IsWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint SendInput(uint numberOfInputs, INPUT[] inputs, int size);
+    private static extern bool IsWindow(IntPtr hWnd);
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
-        public uint Type;
-        public INPUTUNION Data;
-    }
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
-    [StructLayout(LayoutKind.Explicit)]
-    private struct INPUTUNION
-    {
-        [FieldOffset(0)]
-        public KEYBDINPUT Keyboard;
-    }
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool PostMessage(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT
-    {
-        public ushort VirtualKey;
-        public ushort ScanCode;
-        public uint Flags;
-        public uint Time;
-        public UIntPtr ExtraInfo;
-    }
+    [DllImport("user32.dll")]
+    private static extern uint MapVirtualKey(uint code, uint mapType);
 }
