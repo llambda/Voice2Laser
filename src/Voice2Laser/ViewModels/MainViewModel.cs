@@ -5,7 +5,9 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows;
+using System.Windows.Threading;
 using NAudio.Wave;
 using Voice2Laser.Models;
 using Voice2Laser.Services;
@@ -17,6 +19,11 @@ public sealed record AudioInputDevice(int DeviceNumber, string Name);
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly VoskSpeechService _speech = new();
+    private readonly DispatcherTimer _deviceMonitor;
+    private readonly string _settingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Voice2Laser", "audio-device.json");
+
     private string _status = "Pronto";
     private string _modelPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "models", "vosk-model-small-it-0.22"));
     private string _partialText = "In attesa di riconoscimento";
@@ -26,6 +33,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private AudioInputDevice? _selectedAudioDevice;
     private double _audioLevelDb = -60.0;
     private double _audioPeakDb = -60.0;
+    private string? _preferredAudioDeviceName;
+    private bool _isRefreshingDevices;
+    private bool _disposed;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
@@ -94,46 +104,129 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public AudioInputDevice? SelectedAudioDevice
     {
         get => _selectedAudioDevice;
-        set => Set(ref _selectedAudioDevice, value);
+        set
+        {
+            if (Set(ref _selectedAudioDevice, value) && !_isRefreshingDevices && value is not null)
+            {
+                _preferredAudioDeviceName = value.Name;
+                SavePreferredAudioDevice();
+            }
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public MainViewModel()
     {
+        LoadPreferredAudioDevice();
         _speech.RecognitionReceived += OnRecognition;
         _speech.AudioLevelChanged += OnAudioLevel;
-        _speech.StatusChanged += message => Application.Current.Dispatcher.Invoke(() => Status = message);
+        _speech.StatusChanged += message => Application.Current.Dispatcher.BeginInvoke(() => Status = message);
+
         CheckModelAvailability();
         RefreshAudioDevices();
+
+        _deviceMonitor = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromSeconds(3)
+        };
+        _deviceMonitor.Tick += (_, _) => RefreshAudioDevices(automatic: true);
+        _deviceMonitor.Start();
     }
 
-    public void RefreshAudioDevices()
+    public void RefreshAudioDevices() => RefreshAudioDevices(automatic: false);
+
+    private void RefreshAudioDevices(bool automatic)
     {
-        var previousDeviceNumber = SelectedAudioDevice?.DeviceNumber;
-        AudioInputDevices.Clear();
+        if (_disposed || _isRefreshingDevices) return;
 
         try
         {
+            var detected = new List<AudioInputDevice>();
             for (var i = 0; i < WaveIn.DeviceCount; i++)
             {
                 var capabilities = WaveIn.GetCapabilities(i);
-                AudioInputDevices.Add(new AudioInputDevice(i, capabilities.ProductName));
+                detected.Add(new AudioInputDevice(i, capabilities.ProductName));
             }
 
-            SelectedAudioDevice = AudioInputDevices.FirstOrDefault(d => d.DeviceNumber == previousDeviceNumber)
-                                  ?? AudioInputDevices.FirstOrDefault();
+            var currentNames = detected.Select(d => d.Name).ToArray();
+            var oldNames = AudioInputDevices.Select(d => d.Name).ToArray();
+            var deviceListChanged = !currentNames.SequenceEqual(oldNames, StringComparer.OrdinalIgnoreCase);
+
+            if (!deviceListChanged && automatic) return;
+
+            var selectedName = SelectedAudioDevice?.Name ?? _preferredAudioDeviceName;
+            var selectedStillPresent = selectedName is not null &&
+                detected.Any(d => string.Equals(d.Name, selectedName, StringComparison.OrdinalIgnoreCase));
+
+            if (IsListening && !selectedStillPresent)
+            {
+                _speech.Stop();
+                IsListening = false;
+                AudioLevelDb = -60.0;
+                AudioPeakDb = -60.0;
+                Status = "Microfono scollegato. Ascolto fermato; ricollega le cuffie e aggiorna la selezione.";
+            }
+
+            _isRefreshingDevices = true;
+            AudioInputDevices.Clear();
+            foreach (var device in detected)
+                AudioInputDevices.Add(device);
+
+            var restored = selectedName is null
+                ? null
+                : AudioInputDevices.FirstOrDefault(d => string.Equals(d.Name, selectedName, StringComparison.OrdinalIgnoreCase));
+
+            SelectedAudioDevice = restored ?? AudioInputDevices.FirstOrDefault();
+            _isRefreshingDevices = false;
 
             if (AudioInputDevices.Count == 0)
-                Status = "Nessun microfono rilevato. Collega un dispositivo e aggiorna l'elenco.";
-            else
-                Status = $"Microfoni rilevati: {AudioInputDevices.Count}. Seleziona quello da utilizzare.";
+            {
+                SelectedAudioDevice = null;
+                if (!IsListening) Status = "Nessun microfono rilevato. Collega il ricevitore USB delle cuffie.";
+            }
+            else if (!automatic && !IsListening)
+            {
+                Status = restored is not null
+                    ? $"Microfono selezionato: {restored.Name}"
+                    : $"Microfoni rilevati: {AudioInputDevices.Count}. Seleziona quello da utilizzare.";
+            }
         }
         catch (Exception ex)
         {
-            Status = $"Errore durante la ricerca dei microfoni: {ex.Message}";
+            _isRefreshingDevices = false;
+            if (!automatic) Status = $"Errore durante la ricerca dei microfoni: {ex.Message}";
         }
     }
+
+    private void LoadPreferredAudioDevice()
+    {
+        try
+        {
+            if (File.Exists(_settingsPath))
+                _preferredAudioDeviceName = JsonSerializer.Deserialize<AudioDeviceSettings>(File.ReadAllText(_settingsPath))?.DeviceName;
+        }
+        catch
+        {
+            _preferredAudioDeviceName = null;
+        }
+    }
+
+    private void SavePreferredAudioDevice()
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_settingsPath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllText(_settingsPath, JsonSerializer.Serialize(new AudioDeviceSettings(_preferredAudioDeviceName)));
+        }
+        catch (Exception ex)
+        {
+            Status = $"Impossibile salvare il microfono preferito: {ex.Message}";
+        }
+    }
+
+    private sealed record AudioDeviceSettings(string? DeviceName);
 
     private void CheckModelAvailability()
     {
@@ -154,10 +247,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             Path.Combine("graph", "HCLr.fst")
         ];
 
-        var missingFiles = requiredFiles
-            .Where(file => !File.Exists(Path.Combine(path, file)))
-            .ToArray();
-
+        var missingFiles = requiredFiles.Where(file => !File.Exists(Path.Combine(path, file))).ToArray();
         if (missingFiles.Length > 0)
         {
             ModelExists = false;
@@ -237,5 +327,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    public void Dispose() => _speech.Dispose();
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _deviceMonitor.Stop();
+        _speech.Dispose();
+    }
 }
