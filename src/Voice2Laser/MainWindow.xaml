@@ -112,13 +112,8 @@
                     </StackPanel>
                     <TextBlock Text="Il controllo verifica il processo EZCAD2 e l'accessibilità della sua finestra principale."
                                Foreground="#64748B" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                    <CheckBox Content="Modalità test: mostra i tasti senza inviarli"
-                              IsChecked="{Binding IsTestMode, UpdateSourceTrigger=PropertyChanged}"
-                              Margin="0,9,0,0"
-                              Style="{StaticResource MaterialDesignCheckBox}"
-                              FontWeight="SemiBold"/>
-                    <TextBlock Text="Disattiva la modalità test solo quando EZCAD2 è pronto e l'area di lavoro è sicura."
-                               Foreground="#9A3412" FontSize="11" Margin="24,3,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="MODALITÀ TEST ATTIVA · nessun tasto viene inviato"
+                               Foreground="#166534" FontSize="11" FontWeight="Bold" Margin="0,9,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" Click="CheckEzCad_Click"
                         Width="40" MinWidth="40" Height="36" Padding="0"
