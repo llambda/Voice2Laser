@@ -18,14 +18,25 @@ public static class CommandCatalog
 
     public static IReadOnlyList<VoiceCommand> CreateDefaults() =>
     [
+        // Anteprima
         new("anteprima", "preview"),
+        new("preview", "preview"),
+        new("pre", "preview"),
+
+        // Avvio e arresto
         new("start", "start_laser"),
         new("go", "start_laser"),
         new("stop", "stop_laser"),
+
+        // Movimenti: una singola pressione del tasto freccia
         new("su", "move_up"),
+        new("up", "move_up"),
         new("giù", "move_down"),
+        new("down", "move_down"),
         new("destra", "move_right"),
-        new("sinistra", "move_left")
+        new("right", "move_right"),
+        new("sinistra", "move_left"),
+        new("left", "move_left")
     ];
 
     public static string BuildGrammar(IEnumerable<VoiceCommand> commands)
