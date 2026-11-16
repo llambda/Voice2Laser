@@ -92,7 +92,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             var adjusted = Math.Clamp(value, 0.30, 0.95);
             if (!Set(ref _minimumConfidence, adjusted)) return;
-            _speech.MinimumRecognitionConfidence = adjusted;
             SaveVoiceSettings();
         }
     }
