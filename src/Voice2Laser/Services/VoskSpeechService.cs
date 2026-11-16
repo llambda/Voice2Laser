@@ -48,14 +48,14 @@ public sealed class VoskSpeechService : IDisposable
         if (!Directory.Exists(modelPath))
             throw new DirectoryNotFoundException($"Cartella modello non trovata: {modelPath}");
 
-        Vosk.Vosk.SetLogLevel(-1);
-        _model = new Model(modelPath);
-        _recognizer = new VoskRecognizer(_model, 16000.0f, CommandCatalog.BuildGrammar(commands ?? CommandCatalog.CreateDefaults()));
-        _recognizer.SetMaxAlternatives(0);
-        _recognizer.SetWords(true);
-
         try
         {
+            Vosk.Vosk.SetLogLevel(-1);
+            _model = new Model(modelPath);
+            _recognizer = new VoskRecognizer(_model, 16000.0f, CommandCatalog.BuildGrammar(commands ?? CommandCatalog.CreateDefaults()));
+            _recognizer.SetMaxAlternatives(0);
+            _recognizer.SetWords(true);
+
             _waveIn = new WaveInEvent
             {
                 DeviceNumber = deviceNumber,
