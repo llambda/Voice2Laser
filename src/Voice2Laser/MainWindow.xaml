@@ -4,6 +4,42 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Voice2Laser" Height="680" Width="980" MinHeight="560" MinWidth="760"
         Background="#F3F5F8" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="ActionButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="142"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonSurface" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.72"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid Margin="22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -24,23 +60,19 @@
                     <TextBlock Text="Modello Vosk italiano" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <DockPanel LastChildFill="True">
                         <materialDesign:PackIcon DockPanel.Dock="Right"
-                                                 Kind="HelpCircle"
+                                                 Kind="Close"
                                                  Width="28" Height="28"
                                                  Margin="10,0,2,0"
                                                  VerticalAlignment="Center"
                                                  ToolTip="{Binding ModelStatusText}">
                             <materialDesign:PackIcon.Style>
                                 <Style TargetType="{x:Type materialDesign:PackIcon}">
-                                    <Setter Property="Kind" Value="HelpCircle"/>
-                                    <Setter Property="Foreground" Value="#94A3B8"/>
+                                    <Setter Property="Kind" Value="Close"/>
+                                    <Setter Property="Foreground" Value="#DC2626"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ModelExists}" Value="True">
-                                            <Setter Property="Kind" Value="CheckCircle"/>
+                                            <Setter Property="Kind" Value="Check"/>
                                             <Setter Property="Foreground" Value="#16A34A"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding ModelExists}" Value="False">
-                                            <Setter Property="Kind" Value="CloseCircle"/>
-                                            <Setter Property="Foreground" Value="#DC2626"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -52,8 +84,18 @@
                     <TextBlock Text="{Binding Status}" Foreground="#475569" Margin="0,8,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Button Content="Avvia ascolto" Click="Start_Click" Padding="10,6" Margin="0,0,6,0"/>
-                    <Button Content="Ferma" Click="Stop_Click" Padding="10,6"/>
+                    <Button Click="Start_Click" Style="{StaticResource ActionButtonStyle}" Background="#2563EB">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Microphone" Width="18" Height="18" Margin="0,0,8,0"/>
+                            <TextBlock Text="Avvia ascolto" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Click="Stop_Click" Style="{StaticResource ActionButtonStyle}" Background="#475569" Margin="0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Stop" Width="18" Height="18" Margin="0,0,8,0"/>
+                            <TextBlock Text="Ferma" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
