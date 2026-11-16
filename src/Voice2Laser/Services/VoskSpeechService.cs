@@ -132,9 +132,10 @@ public sealed class VoskSpeechService : IDisposable
 
             if (_recognizer.AcceptWaveform(audioBuffer, e.BytesRecorded))
             {
-                var text = ReadText(_recognizer.Result());
+                var resultJson = _recognizer.Result();
+                var text = ReadText(resultJson);
                 if (!string.IsNullOrWhiteSpace(text) && text != "[unk]")
-                    RecognitionReceived?.Invoke(text, true, ReadConfidence(_recognizer.Result()));
+                    RecognitionReceived?.Invoke(text, true, ReadConfidence(resultJson));
             }
             else
             {
