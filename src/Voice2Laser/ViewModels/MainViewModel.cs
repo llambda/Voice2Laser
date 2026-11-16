@@ -61,7 +61,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get => _audioLevelDb;
         private set
         {
-            if (!Set(ref _audioLevelDb, value)) return;
+            if (EqualityComparer<double>.Default.Equals(_audioLevelDb, value)) return;
+            _audioLevelDb = value;
+            OnPropertyChanged();
             OnPropertyChanged(nameof(AudioLevelPercent));
             OnPropertyChanged(nameof(AudioLevelText));
         }
