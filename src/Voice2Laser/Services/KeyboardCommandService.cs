@@ -20,6 +20,59 @@ public sealed class KeyboardCommandService
     private const ushort VkF2 = 0x71;
     private const string TargetProcessName = "EzCad2";
 
+    public bool CheckConnection(out string message)
+    {
+        try
+        {
+            var processes = Process.GetProcessesByName(TargetProcessName);
+            if (processes.Length == 0)
+            {
+                message = "EZCAD2 non è in esecuzione.";
+                return false;
+            }
+
+            try
+            {
+                foreach (var process in processes)
+                {
+                    using (process)
+                    {
+                        try
+                        {
+                            var processId = process.Id;
+                            var windowHandle = process.MainWindowHandle;
+                            if (windowHandle == IntPtr.Zero || !IsWindow(windowHandle))
+                                continue;
+
+                            GetWindowThreadProcessId(windowHandle, out var windowProcessId);
+                            if (windowProcessId == (uint)processId)
+                            {
+                                message = $"EZCAD2 è in esecuzione e raggiungibile. Finestra: {process.MainWindowTitle}";
+                                return true;
+                            }
+                        }
+                        catch
+                        {
+                            // Il processo può terminare o negare l'accesso durante il controllo.
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // I processi vengono rilasciati nel ciclo.
+            }
+
+            message = "EZCAD2 è in esecuzione, ma non è stata trovata una finestra principale accessibile.";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            message = $"Verifica EZCAD2 non riuscita: {ex.Message}";
+            return false;
+        }
+    }
+
     public bool TryExecute(string actionId, out string message)
     {
         var virtualKey = actionId switch
@@ -108,6 +161,12 @@ public sealed class KeyboardCommandService
             }
         }
     };
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
