@@ -39,12 +39,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _isRefreshingDevices;
     private bool _disposed;
     private VoiceCommand? _selectedCommand;
+    private bool _ezCadConnected;
+    private string _ezCadStatus = "Verifica non ancora eseguita.";
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
     public ObservableCollection<VoiceCommand> Commands { get; } = [];
     public IReadOnlyList<CommandAction> AvailableActions => CommandCatalog.AvailableActions;
     public VoiceCommand? SelectedCommand { get => _selectedCommand; set => Set(ref _selectedCommand, value); }
+    public bool EzCadConnected { get => _ezCadConnected; private set => Set(ref _ezCadConnected, value); }
+    public string EzCadStatus { get => _ezCadStatus; private set => Set(ref _ezCadStatus, value); }
 
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string ModelPath
@@ -131,6 +135,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _speech.StatusChanged += message => Application.Current.Dispatcher.BeginInvoke(() => Status = message);
 
         CheckModelAvailability();
+        CheckEzCadConnection();
         RefreshAudioDevices();
 
         _deviceMonitor = new DispatcherTimer(DispatcherPriority.Background)
@@ -335,6 +340,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
 
         return true;
+    }
+
+    public void CheckEzCadConnection()
+    {
+        EzCadConnected = _keyboardCommands.CheckConnection(out var message);
+        EzCadStatus = message;
     }
 
     public void Start()
