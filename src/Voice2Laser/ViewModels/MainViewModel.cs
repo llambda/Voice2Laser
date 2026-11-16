@@ -67,6 +67,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged();
             OnPropertyChanged(nameof(AudioLevelPercent));
             OnPropertyChanged(nameof(AudioLevelText));
+            OnPropertyChanged(nameof(AudioCalibrationHint));
         }
     }
     public double AudioPeakDb
