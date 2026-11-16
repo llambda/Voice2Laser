@@ -77,6 +77,18 @@ public sealed class KeyboardCommandService
         }
     }
 
+    public static string GetKeyDescription(string actionId) => actionId switch
+    {
+        "preview" => "F1",
+        "start_laser" => "F2",
+        "stop_laser" => "ESC",
+        "move_up" => "FRECCIA SU",
+        "move_down" => "FRECCIA GIÙ",
+        "move_left" => "FRECCIA SINISTRA",
+        "move_right" => "FRECCIA DESTRA",
+        _ => "NESSUN TASTO"
+    };
+
     public bool TryExecute(string actionId, out string message)
     {
         var virtualKey = actionId switch
