@@ -458,24 +458,28 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
-            if (isFinal)
+            if (!isFinal)
             {
-                PartialText = $"Riconosciuto: {text} ({confidence:P0})";
-                var matchedCommand = Commands.FirstOrDefault(command =>
-                    string.Equals(command.Phrase.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase));
-                var actionName = matchedCommand is null
-                    ? "Non associato"
-                    : CommandCatalog.GetActionName(matchedCommand.ActionId);
+                PartialText = $"In ascolto: {text}";
+                return;
+            }
 
-                if (matchedCommand is not null)
+            PartialText = $"Riconosciuto: {text} ({confidence:P0})";
+            var matchedCommand = Commands.FirstOrDefault(command =>
+                string.Equals(command.Phrase.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase));
+            var actionName = matchedCommand is null
+                ? "Non associato"
+                : CommandCatalog.GetActionName(matchedCommand.ActionId);
+
+            if (matchedCommand is not null)
+            {
+                if (confidence < MinimumConfidence)
                 {
-                    if (confidence < MinimumConfidence)
-                    {
-                        actionName = $"{actionName} — confidenza insufficiente ({confidence:P0}), ignorato";
-                        Status = $"Comando ignorato: confidenza {confidence:P0}, minimo richiesto {MinimumConfidence:P0}.";
-                    }
-                    else
-                    {
+                    actionName = $"{actionName} — confidenza insufficiente ({confidence:P0}), ignorato";
+                    Status = $"Comando ignorato: confidenza {confidence:P0}, minimo richiesto {MinimumConfidence:P0}.";
+                }
+                else
+                {
                     var now = DateTime.UtcNow;
                     if (_lastRecognizedActionTimes.TryGetValue(matchedCommand.ActionId, out var lastTime) &&
                         now - lastTime < TimeSpan.FromMilliseconds(DuplicateCommandWindowMs))
@@ -502,16 +506,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                             actionName = $"{actionName} — {testMessage}";
                         }
                     }
-                    }
                 }
+            }
 
-                Events.Insert(0, new RecognitionEvent(DateTime.Now, text, actionName));
-                while (Events.Count > 200) Events.RemoveAt(Events.Count - 1);
-            }
-            else
-            {
-                PartialText = $"In ascolto: {text}";
-            }
+            Events.Insert(0, new RecognitionEvent(DateTime.Now, text, actionName));
+            while (Events.Count > 200) Events.RemoveAt(Events.Count - 1);
         });
     }
 
