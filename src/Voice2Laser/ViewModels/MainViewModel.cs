@@ -116,7 +116,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get => _selectedAudioDevice;
         set
         {
-            if (Set(ref _selectedAudioDevice, value) && !_isRefreshingDevices && value is not null)
+            if (EqualityComparer<AudioInputDevice?>.Default.Equals(_selectedAudioDevice, value))
+                return;
+
+            Set(ref _selectedAudioDevice, value);
+
+            if (!_isRefreshingDevices && value is not null)
             {
                 _preferredAudioDeviceName = value.Name;
                 SavePreferredAudioDevice();
