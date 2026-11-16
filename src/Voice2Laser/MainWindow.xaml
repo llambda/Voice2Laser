@@ -173,14 +173,14 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Text="{Binding VoiceThresholdDb, StringFormat=Soglia voce: {0:0} dBFS}" FontSize="12" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding VoiceThresholdDb, StringFormat='Soglia voce: {0:0} dBFS'}" FontSize="12" FontWeight="SemiBold"/>
                         <Slider Minimum="-55" Maximum="-25" TickFrequency="1" IsSnapToTickEnabled="True"
                                 Value="{Binding VoiceThresholdDb, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,4"/>
                         <TextBlock Text="Confidenza minima riconoscimento" FontSize="12" FontWeight="SemiBold"/>
                         <Slider Minimum="0.30" Maximum="0.95" TickFrequency="0.05" IsSnapToTickEnabled="True"
                                 Value="{Binding MinimumConfidence, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,4"/>
-                        <TextBlock Text="{Binding MinimumConfidence, StringFormat=Confidenza richiesta: {0:P0}}" FontSize="11" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding DuplicateCommandWindowMs, StringFormat=Intervallo anti-ripetizione: {0} ms}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Text="{Binding MinimumConfidence, StringFormat='Confidenza richiesta: {0:P0}'}" FontSize="11" Foreground="#64748B"/>
+                        <TextBlock Text="{Binding DuplicateCommandWindowMs, StringFormat='Intervallo anti-ripetizione: {0} ms'}" FontSize="12" FontWeight="SemiBold" Margin="0,8,0,0"/>
                         <Slider Minimum="500" Maximum="3000" TickFrequency="100" IsSnapToTickEnabled="True"
                                 Value="{Binding DuplicateCommandWindowMs, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,12,0"/>
                     </StackPanel>
