@@ -44,8 +44,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         get => _isListening;
         private set
         {
-            if (Set(ref _isListening, value))
-                OnPropertyChanged(nameof(CanSelectAudioDevice));
+            if (_isListening == value) return;
+            _isListening = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanSelectAudioDevice));
         }
     }
     public bool CanSelectAudioDevice => !IsListening;
@@ -178,14 +180,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
         OnPropertyChanged(name);
-    }
-
-    private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null, bool notify = true)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        if (notify) OnPropertyChanged(name);
-        return true;
     }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
