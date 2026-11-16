@@ -31,6 +31,7 @@ public sealed class VoskSpeechService : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (IsListening) return;
+        _voiceHangoverFrames = 0;
         if (!Directory.Exists(modelPath))
             throw new DirectoryNotFoundException($"Cartella modello non trovata: {modelPath}");
 
@@ -69,6 +70,7 @@ public sealed class VoskSpeechService : IDisposable
     {
         if (!IsListening && _waveIn is null) return;
         IsListening = false;
+        _voiceHangoverFrames = 0;
         try { _waveIn?.StopRecording(); }
         catch (InvalidOperationException) { }
         CleanupAudio();
@@ -95,14 +97,24 @@ public sealed class VoskSpeechService : IDisposable
 
             // Apre il gate sopra soglia e lo mantiene per 250 ms per non troncare
             // le code delle parole. Nei periodi di rumore debole invia silenzio a Vosk.
-            if (levels.RmsDb >= VoiceActivationThresholdDb)
+            var voiceDetected = levels.RmsDb >= VoiceActivationThresholdDb;
+            bool keepAudioFrame;
+            if (voiceDetected)
+            {
                 _voiceHangoverFrames = VoiceHangoverFrameCount;
+                keepAudioFrame = true;
+            }
             else if (_voiceHangoverFrames > 0)
+            {
+                keepAudioFrame = true;
                 _voiceHangoverFrames--;
+            }
+            else
+            {
+                keepAudioFrame = false;
+            }
 
-            var audioBuffer = levels.RmsDb >= VoiceActivationThresholdDb || _voiceHangoverFrames > 0
-                ? e.Buffer
-                : new byte[e.BytesRecorded];
+            var audioBuffer = keepAudioFrame ? e.Buffer : new byte[e.BytesRecorded];
 
             if (_recognizer.AcceptWaveform(audioBuffer, e.BytesRecorded))
             {
