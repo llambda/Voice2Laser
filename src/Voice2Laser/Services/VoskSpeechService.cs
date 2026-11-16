@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using NAudio.Wave;
 using Vosk;
+using Voice2Laser.Models;
 
 namespace Voice2Laser.Services;
 
@@ -21,7 +22,7 @@ public sealed class VoskSpeechService : IDisposable
 
     public bool IsListening { get; private set; }
 
-    public void Start(string modelPath, int deviceNumber = 0)
+    public void Start(string modelPath, int deviceNumber = 0, IReadOnlyList<VoiceCommand>? commands = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (IsListening) return;
@@ -30,7 +31,7 @@ public sealed class VoskSpeechService : IDisposable
 
         Vosk.Vosk.SetLogLevel(-1);
         _model = new Model(modelPath);
-        _recognizer = new VoskRecognizer(_model, 16000.0f, CommandCatalog.GrammarJson);
+        _recognizer = new VoskRecognizer(_model, 16000.0f, CommandCatalog.BuildGrammar(commands ?? CommandCatalog.CreateDefaults()));
         _recognizer.SetMaxAlternatives(0);
 
         try
