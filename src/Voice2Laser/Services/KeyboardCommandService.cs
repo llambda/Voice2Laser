@@ -109,20 +109,30 @@ public sealed class KeyboardCommandService
             return false;
         }
 
+        var keyName = GetKeyDescription(actionId);
+
         try
         {
             var windowHandle = IntPtr.Zero;
+            uint targetProcessId = 0;
+
             foreach (var process in Process.GetProcessesByName(TargetProcessName))
             {
                 using (process)
                 {
                     try
                     {
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            windowHandle = process.MainWindowHandle;
-                            break;
-                        }
+                        var candidate = process.MainWindowHandle;
+                        if (candidate == IntPtr.Zero || !IsWindow(candidate))
+                            continue;
+
+                        GetWindowThreadProcessId(candidate, out var candidateProcessId);
+                        if (candidateProcessId != (uint)process.Id)
+                            continue;
+
+                        windowHandle = candidate;
+                        targetProcessId = candidateProcessId;
+                        break;
                     }
                     catch
                     {
@@ -131,18 +141,27 @@ public sealed class KeyboardCommandService
                 }
             }
 
-            if (windowHandle == IntPtr.Zero)
+            if (windowHandle == IntPtr.Zero || targetProcessId == 0)
             {
-                message = "EZCAD2 non trovato: nessun tasto inviato.";
+                message = "Finestra principale di EZCAD2 non trovata: nessun tasto inviato.";
                 return true;
             }
+
             ShowWindowAsync(windowHandle, SwRestore);
             SetForegroundWindow(windowHandle);
 
-            // Non inviare input se Windows non ha effettivamente attivato EZCAD2.
-            if (GetForegroundWindow() != windowHandle)
+            // Verifica sia l'handle sia il PID: non basta che una finestra qualsiasi sia attiva.
+            if (!IsTargetForegroundWindow(windowHandle, targetProcessId))
             {
                 message = "EZCAD2 non è diventato la finestra attiva: tasto non inviato.";
+                return true;
+            }
+
+            // Ultimo controllo immediatamente prima dell'invio, per ridurre il rischio
+            // di inviare input a un'altra applicazione se il focus cambia.
+            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
+            {
+                message = "Il focus di EZCAD2 è cambiato: tasto non inviato.";
                 return true;
             }
 
@@ -153,20 +172,18 @@ public sealed class KeyboardCommandService
             };
 
             var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-            var keyName = virtualKey switch
+            if (sent == 1)
             {
-                VkF1 => "F1",
-                VkF2 => "F2",
-                VkEscape => "ESC",
-                VkUp => "FRECCIA SU",
-                VkDown => "FRECCIA GIÙ",
-                VkLeft => "FRECCIA SINISTRA",
-                VkRight => "FRECCIA DESTRA",
-                _ => "TASTO"
-            };
-            message = sent == inputs.Length
+                // Se Windows ha accettato solo il key-down, prova sempre a rilasciare il tasto.
+                SendInput(1, new[] { CreateKeyboardInput(virtualKey, KeyUp) }, Marshal.SizeOf<INPUT>());
+            }
+
+            var error = Marshal.GetLastWin32Error();
+            message = sent == (uint)inputs.Length
                 ? $"Inviato {keyName} a EZCAD2."
-                : "Windows non ha accettato il comando da tastiera.";
+                : sent == 0
+                    ? $"Invio di {keyName} non riuscito (errore Windows {error}). Nessun esito garantito."
+                    : $"Invio di {keyName} parziale: rilascio del tasto ritentato.";
 
             return true;
         }
@@ -175,6 +192,16 @@ public sealed class KeyboardCommandService
             message = $"Invio tasto non riuscito: {ex.Message}";
             return true;
         }
+    }
+
+    private static bool IsTargetForegroundWindow(IntPtr expectedWindow, uint expectedProcessId)
+    {
+        var foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == IntPtr.Zero || foregroundWindow != expectedWindow)
+            return false;
+
+        GetWindowThreadProcessId(foregroundWindow, out var foregroundProcessId);
+        return foregroundProcessId == expectedProcessId;
     }
 
     private static INPUT CreateKeyboardInput(ushort virtualKey, uint flags) => new()
