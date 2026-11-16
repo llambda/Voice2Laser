@@ -25,6 +25,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _isListening;
     private AudioInputDevice? _selectedAudioDevice;
     private double _audioLevelDb = -60.0;
+    private double _audioPeakDb = -60.0;
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
@@ -68,8 +69,26 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged(nameof(AudioLevelText));
         }
     }
+    public double AudioPeakDb
+    {
+        get => _audioPeakDb;
+        private set
+        {
+            if (EqualityComparer<double>.Default.Equals(_audioPeakDb, value)) return;
+            _audioPeakDb = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AudioPeakText));
+            OnPropertyChanged(nameof(AudioCalibrationHint));
+        }
+    }
     public double AudioLevelPercent => Math.Clamp((AudioLevelDb + 60.0) / 60.0 * 100.0, 0.0, 100.0);
-    public string AudioLevelText => AudioLevelDb <= -59.9 ? "Segnale assente o molto debole" : $"{AudioLevelDb:0} dB";
+    public string AudioLevelText => AudioLevelDb <= -59.9 ? "Segnale assente o molto debole" : $"{AudioLevelDb:0} dBFS RMS";
+    public string AudioPeakText => AudioPeakDb <= -59.9 ? "Picco: —" : $"Picco: {AudioPeakDb:0} dBFS";
+    public string AudioCalibrationHint => AudioPeakDb >= -1.0
+        ? "ATTENZIONE: segnale vicino alla saturazione. Riduci il volume del microfono."
+        : AudioLevelDb <= -50.0
+            ? "Segnale molto debole: avvicina il microfono o aumenta il guadagno."
+            : "Livello rilevato. Prova a parlare a volume normale e poi più forte.";
 
     public AudioInputDevice? SelectedAudioDevice
     {
@@ -176,13 +195,18 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         _speech.Stop();
         AudioLevelDb = -60.0;
+        AudioPeakDb = -60.0;
         IsListening = false;
         Status = "Ascolto fermato";
     }
 
-    private void OnAudioLevel(double levelDb)
+    private void OnAudioLevel(double rmsDb, double peakDb)
     {
-        Application.Current.Dispatcher.BeginInvoke(() => AudioLevelDb = levelDb);
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            AudioLevelDb = rmsDb;
+            AudioPeakDb = peakDb;
+        });
     }
 
     private void OnRecognition(string text, bool isFinal)
