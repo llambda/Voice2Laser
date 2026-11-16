@@ -428,8 +428,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         catch (Exception ex)
         {
-            IsListening = false;
-            IsLiveInputEnabled = false;
             Status = $"Impossibile avviare: {ex.Message}";
             MessageBox.Show(ex.Message, "Voice2Laser", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
