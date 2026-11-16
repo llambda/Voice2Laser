@@ -155,7 +155,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
             if (!deviceListChanged && automatic) return;
 
-            var selectedName = SelectedAudioDevice?.Name ?? _preferredAudioDeviceName;
+            var selectedName = _preferredAudioDeviceName ?? SelectedAudioDevice?.Name;
             var selectedStillPresent = selectedName is not null &&
                 detected.Any(d => string.Equals(d.Name, selectedName, StringComparison.OrdinalIgnoreCase));
 
