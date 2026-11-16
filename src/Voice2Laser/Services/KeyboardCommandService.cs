@@ -7,7 +7,7 @@ using System.Threading;
 namespace Voice2Laser.Services;
 
 /// <summary>
-/// Invio limitato di F1/F2/ESC alla finestra principale del processo EZCAD2.
+/// Invio limitato di F1/F2/ESC e frecce direzionali alla finestra principale di EZCAD2.
 /// Non invia input se EZCAD2 non è la finestra effettivamente in primo piano.
 /// </summary>
 public sealed class KeyboardCommandService
@@ -18,6 +18,10 @@ public sealed class KeyboardCommandService
     private const ushort VkEscape = 0x1B;
     private const ushort VkF1 = 0x70;
     private const ushort VkF2 = 0x71;
+    private const ushort VkUp = 0x26;
+    private const ushort VkDown = 0x28;
+    private const ushort VkLeft = 0x25;
+    private const ushort VkRight = 0x27;
     private const string TargetProcessName = "EzCad2";
 
     public bool CheckConnection(out string message)
@@ -80,6 +84,10 @@ public sealed class KeyboardCommandService
             "preview" => VkF1,
             "start_laser" => VkF2,
             "stop_laser" => VkEscape,
+            "move_up" => VkUp,
+            "move_down" => VkDown,
+            "move_left" => VkLeft,
+            "move_right" => VkRight,
             _ => (ushort)0
         };
 
@@ -133,8 +141,19 @@ public sealed class KeyboardCommandService
             };
 
             var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+            var keyName = virtualKey switch
+            {
+                VkF1 => "F1",
+                VkF2 => "F2",
+                VkEscape => "ESC",
+                VkUp => "FRECCIA SU",
+                VkDown => "FRECCIA GIÙ",
+                VkLeft => "FRECCIA SINISTRA",
+                VkRight => "FRECCIA DESTRA",
+                _ => "TASTO"
+            };
             message = sent == inputs.Length
-                ? $"Inviato {(virtualKey == VkF1 ? "F1" : virtualKey == VkF2 ? "F2" : "ESC")} a EZCAD2."
+                ? $"Inviato {keyName} a EZCAD2."
                 : "Windows non ha accettato il comando da tastiera.";
 
             return true;
