@@ -179,41 +179,38 @@ public sealed class KeyboardCommandService
                 return true;
             }
 
-            // Non portare EZCAD2 in primo piano automaticamente: l'operatore deve
-            // selezionarlo esplicitamente. Se il focus è altrove, non inviare input.
-            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
-            {
-                message = "EZCAD2 non è la finestra attiva: tasto bloccato. Seleziona EZCAD2 e riprova.";
-                return true;
-            }
-
-            // Verifica immediata prima dell'invio; SendInput resta comunque globale
-            // e Windows può cambiare il focus in una brevissima finestra temporale.
-            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
-            {
-                message = "Il focus di EZCAD2 è cambiato: tasto bloccato.";
-                return true;
-            }
-
             var inputs = new[]
             {
                 CreateKeyboardInput(virtualKey, 0),
                 CreateKeyboardInput(virtualKey, KeyUp)
             };
 
+            // Non portare EZCAD2 in primo piano automaticamente: l'operatore deve
+            // selezionarlo esplicitamente. Verifica il focus immediatamente prima di SendInput.
+            if (!IsWindow(windowHandle) || !IsTargetForegroundWindow(windowHandle, targetProcessId))
+            {
+                message = "EZCAD2 non è la finestra attiva: tasto bloccato. Seleziona EZCAD2 e riprova.";
+                return true;
+            }
+
+            // SendInput è globale: il controllo del focus riduce il rischio, ma non elimina
+            // la brevissima race condition in cui Windows potrebbe cambiare finestra attiva.
             var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+            var error = Marshal.GetLastWin32Error();
             if (sent == 1)
             {
                 // Se Windows ha accettato solo il key-down, prova sempre a rilasciare il tasto.
-                SendInput(1, new[] { CreateKeyboardInput(virtualKey, KeyUp) }, Marshal.SizeOf<INPUT>());
+                var releaseSent = SendInput(1, new[] { CreateKeyboardInput(virtualKey, KeyUp) }, Marshal.SizeOf<INPUT>());
+                message = releaseSent == 1
+                    ? $"Invio di {keyName} parziale; rilascio del tasto completato."
+                    : $"Invio di {keyName} parziale: anche il rilascio non è stato confermato.";
             }
-
-            var error = Marshal.GetLastWin32Error();
-            message = sent == (uint)inputs.Length
-                ? $"Inviato {keyName} a EZCAD2."
-                : sent == 0
-                    ? $"Invio di {keyName} non riuscito (errore Windows {error}). Nessun esito garantito."
-                    : $"Invio di {keyName} parziale: rilascio del tasto ritentato.";
+            else
+            {
+                message = sent == (uint)inputs.Length
+                    ? $"Inviato {keyName} a EZCAD2."
+                    : $"Invio di {keyName} non riuscito (errore Windows {error}). Nessun esito garantito.";
+            }
 
             return true;
         }
