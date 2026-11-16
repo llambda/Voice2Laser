@@ -13,7 +13,6 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
     }
 
-    private void VerifyModel_Click(object sender, RoutedEventArgs e) => _viewModel.VerifyModel();
     private void Start_Click(object sender, RoutedEventArgs e) => _viewModel.Start();
     private void Stop_Click(object sender, RoutedEventArgs e) => _viewModel.Stop();
 
