@@ -383,7 +383,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             if (isFinal)
             {
                 PartialText = $"Riconosciuto: {text}";
-                Events.Insert(0, new RecognitionEvent(DateTime.Now, text, true));
+                var matchedCommand = Commands.FirstOrDefault(command =>
+                    string.Equals(command.Phrase.Trim(), text.Trim(), StringComparison.OrdinalIgnoreCase));
+                var actionName = matchedCommand is null
+                    ? "Non associato"
+                    : CommandCatalog.GetActionName(matchedCommand.ActionId);
+                Events.Insert(0, new RecognitionEvent(DateTime.Now, text, actionName));
                 while (Events.Count > 200) Events.RemoveAt(Events.Count - 1);
             }
             else
