@@ -1,0 +1,9 @@
+.vs/
+.vscode/
+bin/
+obj/
+artifacts/
+models/
+*.user
+*.suo
+*.log
