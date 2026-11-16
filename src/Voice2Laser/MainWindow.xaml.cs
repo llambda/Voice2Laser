@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private void Stop_Click(object sender, RoutedEventArgs e) => _viewModel.Stop();
     private void CheckEzCad_Click(object sender, RoutedEventArgs e) => _viewModel.CheckEzCadConnection();
     private void RefreshAudioDevices_Click(object sender, RoutedEventArgs e) => _viewModel.RefreshAudioDevices();
+    private void Calibrate_Click(object sender, RoutedEventArgs e) => _viewModel.StartCalibration();
 
     protected override void OnClosed(EventArgs e)
     {
