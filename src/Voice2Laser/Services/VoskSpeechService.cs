@@ -17,6 +17,7 @@ public sealed class VoskSpeechService : IDisposable
 
     public event Action<string, bool>? RecognitionReceived;
     public event Action<string>? StatusChanged;
+    public event Action<double>? AudioLevelChanged;
 
     public bool IsListening { get; private set; }
 
@@ -74,10 +75,13 @@ public sealed class VoskSpeechService : IDisposable
             _model = null;
         }
         StatusChanged?.Invoke("Ascolto fermato");
+        AudioLevelChanged?.Invoke(-60.0);
     }
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
+        AudioLevelChanged?.Invoke(CalculateAudioLevelDb(e.Buffer, e.BytesRecorded));
+
         lock (_sync)
         {
             if (!IsListening || _recognizer is null) return;
@@ -94,6 +98,21 @@ public sealed class VoskSpeechService : IDisposable
                     RecognitionReceived?.Invoke(text, false);
             }
         }
+    }
+
+    private static double CalculateAudioLevelDb(byte[] buffer, int bytesRecorded)
+    {
+        if (bytesRecorded < 2) return -60.0;
+        double sumSquares = 0;
+        var sampleCount = bytesRecorded / 2;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var sample = BitConverter.ToInt16(buffer, i * 2) / 32768.0;
+            sumSquares += sample * sample;
+        }
+        var rms = Math.Sqrt(sumSquares / sampleCount);
+        if (rms <= 0.000001) return -60.0;
+        return Math.Max(-60.0, 20.0 * Math.Log10(rms));
     }
 
     private static string ReadText(string json)
