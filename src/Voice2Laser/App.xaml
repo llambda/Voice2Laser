@@ -5,6 +5,12 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light"
+                                             PrimaryColor="Blue"
+                                             SecondaryColor="Amber" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+            </ResourceDictionary.MergedDictionaries>
             <DrawingImage x:Key="Voice2LaserIcon">
                 <DrawingImage.Drawing>
                     <DrawingGroup>
@@ -18,12 +24,6 @@
                     </DrawingGroup>
                 </DrawingImage.Drawing>
             </DrawingImage>
-            <ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Light"
-                                             PrimaryColor="Blue"
-                                             SecondaryColor="Amber" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
-            </ResourceDictionary.MergedDictionaries>
 
             <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F5F7FB"/>
             <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF"/>
