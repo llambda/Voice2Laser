@@ -1,4 +1,5 @@
 using System.Windows;
+using Microsoft.Win32;
 using Voice2Laser.ViewModels;
 
 namespace Voice2Laser;
@@ -11,6 +12,21 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = _viewModel;
+    }
+
+    private void BrowseModel_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Seleziona la cartella del modello Vosk",
+            Multiselect = false,
+            InitialDirectory = System.IO.Directory.Exists(_viewModel.ModelPath)
+                ? _viewModel.ModelPath
+                : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        };
+
+        if (dialog.ShowDialog(this) == true)
+            _viewModel.ModelPath = dialog.FolderName;
     }
 
     private void Start_Click(object sender, RoutedEventArgs e) => _viewModel.Start();
