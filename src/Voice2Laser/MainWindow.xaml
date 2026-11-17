@@ -52,10 +52,21 @@
                             </Style>
                         </materialDesign:PackIcon.Style>
                     </materialDesign:PackIcon>
+                    <Button DockPanel.Dock="Right" Click="BrowseModel_Click"
+                            Height="36" MinWidth="40" Padding="8,0" Margin="8,0,0,0"
+                            IsEnabled="{Binding CanSelectModel}"
+                            ToolTip="Scegli la cartella di un altro modello Vosk"
+                            Style="{StaticResource MaterialDesignOutlinedButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FolderOpen" Width="17" Height="17" Margin="0,0,6,0"/>
+                            <TextBlock Text="Scegli modello" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <TextBox Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              MinHeight="34" Height="36" Padding="8,4" FontSize="12"
-                             VerticalContentAlignment="Center"/>
+                             VerticalContentAlignment="Center"
+                             IsEnabled="{Binding CanSelectModel}"/>
                 </DockPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
                             VerticalAlignment="Center" Margin="12,0,0,0">
