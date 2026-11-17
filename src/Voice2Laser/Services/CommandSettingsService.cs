@@ -21,7 +21,7 @@ public sealed class CommandSettingsService
             var saved = JsonSerializer.Deserialize<List<VoiceCommand>>(
                 File.ReadAllText(_settingsPath), JsonOptions);
 
-            if (saved is null || saved.Count == 0)
+            if (saved is null)
                 return CommandCatalog.CreateDefaults().ToList();
 
             return saved.Select(command => new VoiceCommand(
