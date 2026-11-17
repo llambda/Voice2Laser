@@ -242,8 +242,19 @@
                 <Border Grid.Row="1" Background="#FFF7ED" CornerRadius="8" Padding="12" Margin="0,0,0,12">
                     <TextBlock Text="Le modifiche vengono salvate automaticamente. Ferma l'ascolto per modificare i comandi; le modifiche saranno attive al prossimo avvio." Foreground="#9A3412" TextWrapping="Wrap"/>
                 </Border>
-                <DataGrid Grid.Row="2" ItemsSource="{Binding Commands}" SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" IsEnabled="{Binding CanEditCommands}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column" MinHeight="240">
-                    <DataGrid.Columns>
+                <DataGrid Grid.Row="2" ItemsSource="{Binding CommandsView}" SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" IsEnabled="{Binding CanEditCommands}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column" MinHeight="240">
+                                        <DataGrid.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <Border Background="#EAF2FF" Padding="10,7" Margin="0,8,0,3" CornerRadius="5">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#173B63" FontSize="13"/>
+                                    </Border>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </DataGrid.GroupStyle>
+<DataGrid.Columns>
                         <DataGridTextColumn Header="Frase da pronunciare" Binding="{Binding Phrase, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
                         <DataGridTemplateColumn Header="Azione" Width="2*">
                             <DataGridTemplateColumn.CellTemplate>
