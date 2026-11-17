@@ -216,6 +216,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         CommandsView = CollectionViewSource.GetDefaultView(Commands);
         CommandsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(VoiceCommand.ActionName)));
+        if (CommandsView is ICollectionViewLiveShaping liveShaping && liveShaping.CanChangeLiveGrouping)
+        {
+            liveShaping.LiveGroupingProperties.Add(nameof(VoiceCommand.ActionName));
+            liveShaping.IsLiveGrouping = true;
+        }
         LoadModelPath();
         foreach (var command in _commandSettings.Load())
         {
@@ -506,12 +511,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private void OnCommandPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         SaveCommands();
-        if (e.PropertyName == nameof(VoiceCommand.ActionId) ||
-            e.PropertyName == nameof(VoiceCommand.ActionName))
-        {
-            Application.Current.Dispatcher.BeginInvoke(
-                DispatcherPriority.Background, new Action(() => CommandsView.Refresh()));
-        }
     }
 
     private void SaveCommands()
