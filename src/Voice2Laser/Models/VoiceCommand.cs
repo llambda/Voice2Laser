@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Voice2Laser.Services;
 
 namespace Voice2Laser.Models;
 
@@ -23,8 +24,16 @@ public sealed class VoiceCommand : INotifyPropertyChanged
     public string ActionId
     {
         get => _actionId;
-        set { if (_actionId == value) return; _actionId = value; OnPropertyChanged(); }
+        set
+        {
+            if (_actionId == value) return;
+            _actionId = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ActionName));
+        }
     }
+
+    public string ActionName => CommandCatalog.GetActionName(ActionId);
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
