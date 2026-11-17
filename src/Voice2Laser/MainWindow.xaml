@@ -5,7 +5,9 @@
         Title="Voice2Laser" Height="900" Width="1120" MinHeight="720" MinWidth="860"
         Background="{DynamicResource AppBackgroundBrush}" WindowStartupLocation="CenterScreen">
 
-    <Grid Margin="24">
+    <TabControl Margin="12">
+        <TabItem Header="Controllo">
+        <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -229,4 +231,35 @@
         <TextBlock Grid.Row="6" Text="COMANDI: anteprima · start/go · stop · su · giù · destra · sinistra. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
                    Foreground="#9A3412" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" Margin="2,12,2,0"/>
     </Grid>
+        </TabItem>
+        <TabItem Header="Comandi">
+            <Grid Margin="24">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                    <TextBlock Text="Configurazione comandi vocali" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource AppTextBrush}"/>
+                    <TextBlock Text="Aggiungi le parole che vuoi pronunciare e scegli l'azione da eseguire." Foreground="{DynamicResource AppMutedBrush}" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Border Grid.Row="1" Background="#FFF7ED" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                    <TextBlock Text="Le modifiche vengono salvate automaticamente. Ferma l'ascolto per modificare i comandi; le modifiche saranno attive al prossimo avvio." Foreground="#9A3412" TextWrapping="Wrap"/>
+                </Border>
+                <DataGrid Grid.Row="2" ItemsSource="{Binding Commands}" SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" IsEnabled="{Binding CanEditCommands}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column" MinHeight="240">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Frase da pronunciare" Binding="{Binding Phrase, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                        <DataGridComboBoxColumn Header="Azione" ItemsSource="{Binding DataContext.AvailableCommandActions, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValueBinding="{Binding ActionId, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <DockPanel Grid.Row="3" Margin="0,14,0,0">
+                    <TextBlock Text="{Binding CommandCountText}" VerticalAlignment="Center" Foreground="{DynamicResource AppMutedBrush}"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Click="AddCommand_Click" Margin="0,0,8,0" Padding="14,7" IsEnabled="{Binding CanEditCommands}" Style="{StaticResource MaterialDesignOutlinedButton}">
+                            <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="Plus" Width="17" Height="17" Margin="0,0,6,0"/><TextBlock Text="Aggiungi"/></StackPanel>
+                        </Button>
+                        <Button Click="RemoveCommand_Click" Padding="14,7" IsEnabled="{Binding CanRemoveCommand}" Style="{StaticResource MaterialDesignOutlinedButton}">
+                            <StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="Delete" Width="17" Height="17" Margin="0,0,6,0"/><TextBlock Text="Elimina selezionato"/></StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+        </TabItem>
+    </TabControl>
 </Window>
