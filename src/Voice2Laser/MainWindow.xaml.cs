@@ -29,6 +29,9 @@ public partial class MainWindow : Window
             _viewModel.ModelPath = dialog.FolderName;
     }
 
+    private void AddCommand_Click(object sender, RoutedEventArgs e) => _viewModel.AddCommand();
+    private void RemoveCommand_Click(object sender, RoutedEventArgs e) => _viewModel.RemoveSelectedCommand();
+
     private void Start_Click(object sender, RoutedEventArgs e) => _viewModel.Start();
     private void Stop_Click(object sender, RoutedEventArgs e) => _viewModel.Stop();
     private void CheckEzCad_Click(object sender, RoutedEventArgs e) => _viewModel.CheckEzCadConnection();
