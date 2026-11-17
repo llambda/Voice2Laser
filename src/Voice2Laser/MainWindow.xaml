@@ -228,7 +228,7 @@
                 </DataGrid>
             </DockPanel>
         </Border>
-        <TextBlock Grid.Row="6" Text="COMANDI: anteprima · start/go · stop · su · giù · destra · sinistra. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
+        <TextBlock Grid.Row="6" Text="Configura le frasi vocali nella scheda Comandi. Il riconoscimento vocale non sostituisce interlock e arresto di emergenza hardware."
                    Foreground="#9A3412" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" Margin="2,12,2,0"/>
     </Grid>
         </TabItem>
@@ -245,7 +245,17 @@
                 <DataGrid Grid.Row="2" ItemsSource="{Binding Commands}" SelectedItem="{Binding SelectedCommand, Mode=TwoWay}" IsEnabled="{Binding CanEditCommands}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column" MinHeight="240">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Frase da pronunciare" Binding="{Binding Phrase, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
-                        <DataGridComboBoxColumn Header="Azione" ItemsSource="{Binding DataContext.AvailableCommandActions, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValueBinding="{Binding ActionId, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                        <DataGridTemplateColumn Header="Azione" Width="2*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.AvailableCommandActions, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                              DisplayMemberPath="Name" SelectedValuePath="Id"
+                                              SelectedValue="{Binding ActionId, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding DataContext.CanEditCommands, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                              MinWidth="180"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
                 <DockPanel Grid.Row="3" Margin="0,14,0,0">
