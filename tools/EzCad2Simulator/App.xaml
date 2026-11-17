@@ -3,6 +3,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <DrawingImage x:Key="EzCad2SimulatorIcon">
+            <DrawingImage.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#17212B" Geometry="M 4,0 L 28,0 Q 32,0 32,4 L 32,28 Q 32,32 28,32 L 4,32 Q 0,32 0,28 L 0,4 Q 0,0 4,0 Z"/>
+                    <GeometryDrawing Brush="#2D9CDB" Geometry="M 5,5 L 27,5 L 27,27 L 5,27 Z"/>
+                    <GeometryDrawing Brush="#EAF4FF" Geometry="M 8,8 L 24,8 L 24,24 L 8,24 Z"/>
+                    <GeometryDrawing Brush="#17212B" Geometry="M 10,10 L 22,10 L 22,12 L 10,12 Z M 10,15 L 22,15 L 22,17 L 10,17 Z M 10,20 L 19,20 L 19,22 L 10,22 Z"/>
+                    <GeometryDrawing Brush="#F5B942" Geometry="M 23,18 L 29,24 L 26,27 L 20,21 Z"/>
+                    <GeometryDrawing Brush="#FF5A5F" Geometry="M 3,28 L 29,28 L 29,30 L 3,30 Z"/>
+                </DrawingGroup>
+            </DrawingImage.Drawing>
+        </DrawingImage>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="14,7"/>
             <Setter Property="Margin" Value="4"/>
