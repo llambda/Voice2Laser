@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -20,6 +21,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly VoskSpeechService _speech = new();
     private readonly KeyboardCommandService _keyboardCommands = new();
+    private readonly CommandSettingsService _commandSettings = new();
     private readonly DispatcherTimer _deviceMonitor;
     private readonly string _settingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -54,7 +56,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
-    public ObservableCollection<VoiceCommand> Commands { get; } = new(CommandCatalog.CreateDefaults());
+    public ObservableCollection<VoiceCommand> Commands { get; } = [];
+    public IReadOnlyList<CommandAction> AvailableCommandActions => CommandCatalog.AvailableActions;
+    private VoiceCommand? _selectedCommand;
+    public VoiceCommand? SelectedCommand
+    {
+        get => _selectedCommand;
+        set
+        {
+            if (!Set(ref _selectedCommand, value)) return;
+            OnPropertyChanged(nameof(CanRemoveCommand));
+        }
+    }
+    public bool CanEditCommands => !IsListening;
+    public bool CanRemoveCommand => CanEditCommands && SelectedCommand is not null;
+    public string CommandCountText => Commands.Count + " frasi configurate";
     public bool EzCadConnected { get => _ezCadConnected; private set => Set(ref _ezCadConnected, value); }
     public string EzCadStatus { get => _ezCadStatus; private set => Set(ref _ezCadStatus, value); }
 
@@ -134,6 +150,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanSelectAudioDevice));
             OnPropertyChanged(nameof(CanSelectModel));
+            OnPropertyChanged(nameof(CanEditCommands));
+            OnPropertyChanged(nameof(CanRemoveCommand));
         }
     }
     public bool CanSelectAudioDevice => !IsListening;
@@ -195,6 +213,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public MainViewModel()
     {
         LoadModelPath();
+        foreach (var command in _commandSettings.Load())
+        {
+            Commands.Add(command);
+            command.PropertyChanged += OnCommandPropertyChanged;
+        }
+        Commands.CollectionChanged += OnCommandsCollectionChanged;
         LoadPreferredAudioDevice();
         LoadVoiceSettings();
         _speech.VoiceActivationThresholdDb = _voiceThresholdDb;
@@ -443,6 +467,70 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         Status = ModelStatusText;
     }
 
+
+    public void AddCommand()
+    {
+        if (!CanEditCommands) return;
+        var command = new VoiceCommand("nuovo comando", "preview");
+        Commands.Add(command);
+        SelectedCommand = command;
+        Status = "Nuova frase aggiunta. Modifica la frase e seleziona l'azione desiderata.";
+    }
+
+    public void RemoveSelectedCommand()
+    {
+        if (!CanRemoveCommand || SelectedCommand is null) return;
+        var removedPhrase = SelectedCommand.Phrase;
+        Commands.Remove(SelectedCommand);
+        SelectedCommand = null;
+        Status = "Comando '" + removedPhrase + "' eliminato.";
+    }
+
+    private void OnCommandsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+            foreach (VoiceCommand command in e.OldItems)
+                command.PropertyChanged -= OnCommandPropertyChanged;
+        if (e.NewItems is not null)
+            foreach (VoiceCommand command in e.NewItems)
+                command.PropertyChanged += OnCommandPropertyChanged;
+        OnPropertyChanged(nameof(CommandCountText));
+        OnPropertyChanged(nameof(CanRemoveCommand));
+        SaveCommands();
+    }
+
+    private void OnCommandPropertyChanged(object? sender, PropertyChangedEventArgs e) => SaveCommands();
+
+    private void SaveCommands()
+    {
+        var phrases = Commands.Select(command => command.Phrase?.Trim() ?? string.Empty).ToArray();
+        if (phrases.Any(string.IsNullOrWhiteSpace))
+        {
+            Status = "Ogni comando deve avere una frase. Completa la frase prima di continuare.";
+            return;
+        }
+        var duplicate = phrases.GroupBy(phrase => phrase, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+        {
+            Status = "La frase '" + duplicate.Key + "' è duplicata. Usa una frase diversa.";
+            return;
+        }
+        if (Commands.Any(command => !CommandCatalog.AvailableActions.Any(action => action.Id == command.ActionId)))
+        {
+            Status = "Seleziona un'azione valida per ogni frase.";
+            return;
+        }
+        try
+        {
+            _commandSettings.Save(Commands);
+            Status = "Comandi salvati automaticamente.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Impossibile salvare i comandi: " + ex.Message;
+        }
+    }
 
     public void CheckEzCadConnection()
     {
