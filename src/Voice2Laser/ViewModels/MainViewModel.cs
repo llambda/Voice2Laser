@@ -27,6 +27,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly string _voiceSettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Voice2Laser", "voice-settings.json");
+    private readonly string _modelSettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Voice2Laser", "model-settings.json");
     private DispatcherTimer? _calibrationTimer;
     private readonly List<double> _calibrationSamples = [];
 
@@ -115,6 +118,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _modelPath = value;
             OnPropertyChanged();
             CheckModelAvailability();
+            SaveModelPath();
         }
     }
     public string PartialText { get => _partialText; private set => Set(ref _partialText, value); }
@@ -129,9 +133,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _isListening = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanSelectAudioDevice));
+            OnPropertyChanged(nameof(CanSelectModel));
         }
     }
     public bool CanSelectAudioDevice => !IsListening;
+    public bool CanSelectModel => !IsListening;
     public double AudioLevelDb
     {
         get => _audioLevelDb;
@@ -188,6 +194,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public MainViewModel()
     {
+        LoadModelPath();
         LoadPreferredAudioDevice();
         LoadVoiceSettings();
         _speech.VoiceActivationThresholdDb = _voiceThresholdDb;
@@ -370,6 +377,38 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         };
         _calibrationTimer.Start();
     }
+
+    private void LoadModelPath()
+    {
+        try
+        {
+            if (!File.Exists(_modelSettingsPath)) return;
+            var settings = JsonSerializer.Deserialize<ModelPathSettings>(File.ReadAllText(_modelSettingsPath));
+            if (!string.IsNullOrWhiteSpace(settings?.Path))
+                _modelPath = settings.Path;
+        }
+        catch
+        {
+            // Mantiene il percorso predefinito se le impostazioni non sono leggibili.
+        }
+    }
+
+    private void SaveModelPath()
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_modelSettingsPath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllText(_modelSettingsPath,
+                JsonSerializer.Serialize(new ModelPathSettings(_modelPath), new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            Status = $"Impossibile salvare il modello selezionato: {ex.Message}";
+        }
+    }
+
+    private sealed record ModelPathSettings(string Path);
 
     private void CheckModelAvailability()
     {
