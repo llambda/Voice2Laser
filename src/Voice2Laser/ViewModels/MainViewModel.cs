@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Threading;
 using NAudio.Wave;
 using Voice2Laser.Models;
@@ -57,6 +58,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public ObservableCollection<RecognitionEvent> Events { get; } = [];
     public ObservableCollection<AudioInputDevice> AudioInputDevices { get; } = [];
     public ObservableCollection<VoiceCommand> Commands { get; } = [];
+    public ICollectionView CommandsView { get; }
     public IReadOnlyList<CommandAction> AvailableCommandActions => CommandCatalog.AvailableActions;
     private VoiceCommand? _selectedCommand;
     public VoiceCommand? SelectedCommand
@@ -212,6 +214,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public MainViewModel()
     {
+        CommandsView = CollectionViewSource.GetDefaultView(Commands);
+        CommandsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(VoiceCommand.ActionName)));
         LoadModelPath();
         foreach (var command in _commandSettings.Load())
         {
@@ -499,7 +503,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         SaveCommands();
     }
 
-    private void OnCommandPropertyChanged(object? sender, PropertyChangedEventArgs e) => SaveCommands();
+    private void OnCommandPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        SaveCommands();
+        if (e.PropertyName == nameof(VoiceCommand.ActionId) ||
+            e.PropertyName == nameof(VoiceCommand.ActionName))
+        {
+            Application.Current.Dispatcher.BeginInvoke(
+                DispatcherPriority.Background, new Action(() => CommandsView.Refresh()));
+        }
+    }
 
     private void SaveCommands()
     {
