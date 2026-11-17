@@ -5,6 +5,19 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
+            <DrawingImage x:Key="Voice2LaserIcon">
+                <DrawingImage.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="#071A4A" Geometry="M 4,0 L 28,0 Q 32,0 32,4 L 32,28 Q 32,32 28,32 L 4,32 Q 0,32 0,28 L 0,4 Q 0,0 4,0 Z"/>
+                        <GeometryDrawing Brush="#00D7F5" Geometry="M 4,14 L 7,14 L 7,18 L 4,18 Z M 8,11 L 11,11 L 11,21 L 8,21 Z M 12,8 L 15,8 L 15,24 L 12,24 Z M 17,8 L 20,8 L 20,24 L 17,24 Z M 21,11 L 24,11 L 24,21 L 21,21 Z M 25,14 L 28,14 L 28,18 L 25,18 Z"/>
+                        <GeometryDrawing Brush="#F8FBFF" Geometry="M 13,5 Q 13,3 16,3 Q 19,3 19,5 L 19,17 Q 19,21 16,21 Q 13,21 13,17 Z"/>
+                        <GeometryDrawing Brush="#071A4A" Geometry="M 14,7 L 18,7 L 18,8.5 L 14,8.5 Z M 14,11 L 18,11 L 18,12.5 L 14,12.5 Z M 14,15 L 18,15 L 18,16.5 L 14,16.5 Z"/>
+                        <GeometryDrawing Brush="#F8FBFF" Geometry="M 11,16 Q 11,23 16,23 Q 21,23 21,16 L 22.5,16 Q 22.5,24 17,25 L 17,27 L 20,27 L 20,28.5 L 12,28.5 L 12,27 L 15,27 L 15,25 Q 9.5,24 9.5,16 Z"/>
+                        <GeometryDrawing Brush="#FF3B45" Geometry="M 15.5,25.5 L 16.5,25.5 L 16.5,31 L 15.5,31 Z M 2,28 L 30,28 L 30,29 L 2,29 Z"/>
+                        <GeometryDrawing Brush="#FFF4C2" Geometry="M 14.5,27.5 A 1.5,1.5 0 1 0 17.5,27.5 A 1.5,1.5 0 1 0 14.5,27.5 Z"/>
+                    </DrawingGroup>
+                </DrawingImage.Drawing>
+            </DrawingImage>
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme BaseTheme="Light"
                                              PrimaryColor="Blue"
