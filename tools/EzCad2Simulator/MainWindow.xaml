@@ -1,4 +1,5 @@
 <Window x:Class="EzCad2Simulator.MainWindow"
+        Icon="{StaticResource EzCad2SimulatorIcon}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="EZCAD2 - Simulatore di test" Height="720" Width="960"
